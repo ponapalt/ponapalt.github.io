@@ -89,3 +89,4 @@ title: ラーシェ
 ## 作ってくれた人
 
 - [ばぐとら研](https://ssp.shillest.net/) 第一研究部の [@ponapalt](https://ukadon.shillest.net/@ponapalt) さん
+- イラスト・アイコンは 狼牙改さんです [X:rougakai](https://x.com/rougakai) [pixiv:195412](https://www.pixiv.net/users/195412)
