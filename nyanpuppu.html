@@ -2,45 +2,18 @@
 title: にゃんエンコ
 layout: post
 ---
-<!DOCTYPE html>
-<html>
-<head>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>にゃんエンコ</title>
-    <style>
-        body {
-            color: black;
-            background-color: white;
-        }
-        textarea {
-            width: 100%;
-            box-sizing: border-box;
-            color: black;
-            background-color: white;
-        }
-        @media (prefers-color-scheme: dark) {
-            body {
-                color: white;
-                background-color: black;
-            }
-            textarea {
-                color: white;
-                background-color: black;
-            }
-        }
-    </style>
-</head>
-<body>
-	<p>にゃんエンコ（v0.013-p）入力した平仮名文字を、うかどんのにゃんぷっぷーにエンコードします。<br>
-	改行・余白対応。ダークモード対応（たぶん）</p>
 
-    <textarea id="inputText" placeholder="ひらがな入力" rows="5"></textarea>
-    <textarea id="outputText" placeholder="結果" readonly rows="5"></textarea>
-    <button onclick="copyToClipboard()">コピー</button>
-    <div id="warningMessage" style="color: red;"></div>
+にゃんエンコ（v0.014-p-jekyll）
 
-    <script>
-        document.getElementById('inputText').addEventListener('input', encodeText);
+入力した平仮名文字を、うかどんのにゃんぷっぷーにエンコードします。改行・余白対応。
+
+<textarea id="inputText" placeholder="ひらがな入力" rows="5" style="width: 100%; box-sizing: border-box;"></textarea>
+<textarea id="outputText" placeholder="結果" readonly rows="5" style="width: 100%; box-sizing: border-box;"></textarea>
+<button onclick="copyToClipboard()">コピー</button>
+<div id="warningMessage" style="color: red;"></div>
+
+<script>
+    document.getElementById('inputText').addEventListener('input', encodeText);
 const map = {
     // 数字
     '０': ':u_nyanpuppu__0:',
@@ -174,41 +147,39 @@ const map = {
     '　': ':blank:',
 };
 
-        function encodeText() {
-            const inputText = document.getElementById('inputText').value;
-            let outputText = '';
-            let unknownCharacters = new Set();
+    function encodeText() {
+        const inputText = document.getElementById('inputText').value;
+        let outputText = '';
+        let unknownCharacters = new Set();
 
-            for (const char of inputText) {
-                if (char === ' ') {
-                    document.getElementById('warningMessage').innerText = '警告：半角スペースは使用できません。';
-                    continue;
-                }
-                if (map[char]) {
-                    outputText += map[char];
-                } else if (char === '\n') {
-                    outputText += char;  // 改行はそのまま。
-                } else {
-                    outputText += char;  // マッピングがないなら元の文字。
-                    unknownCharacters.add(char);
-                }
-                outputText += "\u200B";  // ゼロ幅スペース。
+        for (const char of inputText) {
+            if (char === ' ') {
+                document.getElementById('warningMessage').innerText = '警告：半角スペースは使用できません。';
+                continue;
             }
-
-            document.getElementById('outputText').value = outputText;
-
-            if (unknownCharacters.size > 0) {
-                document.getElementById('warningMessage').innerText += '警告：以下の文字はマッピングが定義されていません：' + Array.from(unknownCharacters).join(', ');
+            if (map[char]) {
+                outputText += map[char];
+            } else if (char === '\n') {
+                outputText += char;  // 改行はそのまま。
             } else {
-                document.getElementById('warningMessage').innerText = '';
+                outputText += char;  // マッピングがないなら元の文字。
+                unknownCharacters.add(char);
             }
+            outputText += "\u200B";  // ゼロ幅スペース。
         }
 
-        function copyToClipboard() {
-            const copyText = document.getElementById("outputText");
-            copyText.select();
-            document.execCommand("copy");
+        document.getElementById('outputText').value = outputText;
+
+        if (unknownCharacters.size > 0) {
+            document.getElementById('warningMessage').innerText += '警告：以下の文字はマッピングが定義されていません：' + Array.from(unknownCharacters).join(', ');
+        } else {
+            document.getElementById('warningMessage').innerText = '';
         }
-    </script>
-</body>
-</html>
+    }
+
+    function copyToClipboard() {
+        const copyText = document.getElementById("outputText");
+        copyText.select();
+        document.execCommand("copy");
+    }
+</script>
