@@ -9,28 +9,72 @@ layout: post
 
 <p>フォローボタンを押したら、うかどんのページに飛びますので、そこでもう一度フォローを押してください。</p>
 
+<p>Blueskyの参加者と今のままやりとりするヒント：<a href="#" class="profile-check-link" data-username="bsky.brid.gy" data-server="bsky.brid.gy">Bridgy Fedを相互フォロー</a>して、ap.brid.gyで終わるリンクをBlueskyユーザーさんに教えてください。</p>
+
 <p>
 <input type="text" id="usernameInput" placeholder="ユーザー名 (@なし)" style="margin: 10px 0; padding: 5px;">
 <input type="text" id="serverInput" placeholder="サーバ名 (例: mastodon.social)" style="margin: 10px 0; padding: 5px; width: 250px;">
+<button id="checkButton" style="margin: 10px 0; padding: 5px 10px;">確認</button>
 </p>
 
 <p>
-<button id="checkButton" style="margin: 10px 0; padding: 5px; padding-left: 10px; padding-right: 10px;">確認</button>
-<button id="followButton" style="margin: 10px 0; padding: 5px; padding-left: 10px; padding-right: 10px; display: none;">フォロー</button>
+<button id="followButton" style="margin: 10px 0; padding: 10px 20px; border-radius: 5px; font-size: 1.2em; font-weight: bold; display: none;">フォロー</button>
 </p>
 
 <div id="profile" style="margin-top: 20px; border: 1px solid gray; padding: 10px; display: none;"></div>
 
 <script>
+// グローバル変数
+let profileUrl = '';
+let profileDiv = null;
+let followButton = null;
+
+// プロフィールチェック関数
+async function checkProfile(username, server) {
+    const account = `${username}@${server}`;
+
+    try {
+        // WebFinger リクエスト
+        const webfingerUrl = `https://${server}/.well-known/webfinger?resource=acct:${account}`;
+        const webfingerResponse = await fetch(webfingerUrl);
+        if (!webfingerResponse.ok) throw new Error('WebFinger情報の取得に失敗しました。');
+        const webfingerData = await webfingerResponse.json();
+
+        // プロフィールURLの取得
+        const profileLink = webfingerData.links.find(link => link.rel === 'self' && link.type === 'application/activity+json');
+        if (!profileLink) throw new Error('プロフィールURLが見つかりません。');
+        profileUrl = profileLink.href;
+
+        // プロフィール情報の取得
+        const profileResponse = await fetch(profileUrl, {
+            headers: { 'Accept': 'application/activity+json' }
+        });
+        if (!profileResponse.ok) throw new Error('プロフィールの取得に失敗しました。');
+        const profileData = await profileResponse.json();
+
+        // プロフィール情報の表示
+        profileDiv.innerHTML = `
+            <h2>${profileData.name || username}</h2>
+            <p>${account}</p>
+            <img src="${profileData.icon?.url || '/api/placeholder/100/100'}" alt="Avatar" style="width: 100px; height: 100px;">
+            <p>${profileData.summary || 'No bio available'}</p>
+        `;
+        profileDiv.style.display = 'block';
+        followButton.style.display = 'block';
+    } catch (error) {
+        alert('エラーが発生しました: ' + error.message);
+    }
+}
+
+// DOMが読み込まれた後に実行
+document.addEventListener('DOMContentLoaded', () => {
     const checkButton = document.getElementById('checkButton');
-    const followButton = document.getElementById('followButton');
+    followButton = document.getElementById('followButton');
     const usernameInput = document.getElementById('usernameInput');
     const serverInput = document.getElementById('serverInput');
-    const profileDiv = document.getElementById('profile');
+    profileDiv = document.getElementById('profile');
 
-    let profileUrl = '';
-
-    checkButton.addEventListener('click', async () => {
+    checkButton.addEventListener('click', () => {
         const username = usernameInput.value.trim();
         const server = serverInput.value.trim();
 
@@ -39,43 +83,28 @@ layout: post
             return;
         }
 
-        const account = `${username}@${server}`;
-
-        try {
-            // WebFinger リクエスト
-            const webfingerUrl = `https://${server}/.well-known/webfinger?resource=acct:${account}`;
-            const webfingerResponse = await fetch(webfingerUrl);
-            if (!webfingerResponse.ok) throw new Error('WebFinger情報の取得に失敗しました。');
-            const webfingerData = await webfingerResponse.json();
-
-            // プロフィールURLの取得
-            const profileLink = webfingerData.links.find(link => link.rel === 'self' && link.type === 'application/activity+json');
-            if (!profileLink) throw new Error('プロフィールURLが見つかりません。');
-            profileUrl = profileLink.href;
-
-            // プロフィール情報の取得
-            const profileResponse = await fetch(profileUrl, {
-                headers: { 'Accept': 'application/activity+json' }
-            });
-            if (!profileResponse.ok) throw new Error('プロフィールの取得に失敗しました。');
-            const profileData = await profileResponse.json();
-
-            // プロフィール情報の表示
-            profileDiv.innerHTML = `
-                <h2>${profileData.name || username}</h2>
-                <p>${account}</p>
-                <img src="${profileData.icon?.url || '/api/placeholder/100/100'}" alt="Avatar" style="width: 100px; height: 100px;">
-                <p>${profileData.summary || 'No bio available'}</p>
-            `;
-            profileDiv.style.display = 'block';
-            followButton.style.display = 'block';
-        } catch (error) {
-            alert('エラーが発生しました: ' + error.message);
-        }
+        checkProfile(username, server);
     });
 
     followButton.addEventListener('click', () => {
         const followUrl = `https://ukadon.shillest.net/authorize_interaction?uri=${encodeURIComponent(profileUrl)}`;
         window.open(followUrl, '_blank');
     });
+
+    // プロフィールチェックリンクのイベントリスナーを追加
+    document.querySelectorAll('.profile-check-link').forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            const username = e.target.dataset.username;
+            const server = e.target.dataset.server;
+
+            if (!username || !server) {
+                alert('ユーザー名とサーバ名が指定されていません。');
+                return;
+            }
+
+            checkProfile(username, server);
+        });
+    });
+});
 </script>
