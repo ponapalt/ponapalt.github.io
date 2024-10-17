@@ -26,6 +26,8 @@ layout: post
 <script>
 // グローバル変数
 let profileUrl = '';
+let profileDiv = null;
+let followButton = null;
 
 // プロフィールチェック関数
 async function checkProfile(username, server) {
@@ -67,10 +69,10 @@ async function checkProfile(username, server) {
 // DOMが読み込まれた後に実行
 document.addEventListener('DOMContentLoaded', () => {
     const checkButton = document.getElementById('checkButton');
-    const followButton = document.getElementById('followButton');
+    followButton = document.getElementById('followButton');
     const usernameInput = document.getElementById('usernameInput');
     const serverInput = document.getElementById('serverInput');
-    const profileDiv = document.getElementById('profile');
+    profileDiv = document.getElementById('profile');
 
     checkButton.addEventListener('click', () => {
         const username = usernameInput.value.trim();
