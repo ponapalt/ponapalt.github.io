@@ -3,17 +3,23 @@ title: フォローツール
 layout: post
 ---
 
-このツールを使うと、うかどん以外の人を簡単にフォローできます。
+<p>このツールを使うと、うかどん以外の人を簡単にフォローできます。</p>
 
-Mastodonだけでなく、Misskeyも対応しています(misskey.ioも当然大丈夫)
+<p>Mastodonだけでなく、Misskeyも対応しています(misskey.ioも当然大丈夫)</p>
 
-フォローボタンを押したら、うかどんのページに飛びますので、そこでもう一度フォローを押してください。
+<p>フォローボタンを押したら、うかどんのページに飛びますので、そこでもう一度フォローを押してください。</p>
 
+<p>
 <input type="text" id="usernameInput" placeholder="ユーザー名 (@なし)" style="margin: 10px 0; padding: 5px;">
 <input type="text" id="serverInput" placeholder="サーバ名 (例: mastodon.social)" style="margin: 10px 0; padding: 5px; width: 250px;">
+</p>
+
+<p>
 <button id="checkButton" style="margin: 10px 0; padding: 5px; padding-left: 10px; padding-right: 10px;">確認</button>
+<button id="followButton" style="margin: 10px 0; padding: 5px; padding-left: 10px; padding-right: 10px; display: none;">フォロー</button>
+</p>
+
 <div id="profile" style="margin-top: 20px; border: 1px solid gray; padding: 10px; display: none;"></div>
-<button id="followButton" style="margin: 10px 0; padding: 5px; display: none;">フォロー</button>
 
 <script>
     const checkButton = document.getElementById('checkButton');
