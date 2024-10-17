@@ -3,11 +3,11 @@ title: フォローツール
 layout: post
 ---
 
-<input type="text" id="usernameInput" placeholder="ユーザー名 (@なし)">
-<input type="text" id="serverInput" placeholder="サーバ名 (例: mastodon.social)">
-<button id="checkButton">確認</button>
-<div id="profile"></div>
-<button id="followButton">フォロー</button>
+<input type="text" id="usernameInput" placeholder="ユーザー名 (@なし)" style="margin: 10px 0; padding: 5px;">
+<input type="text" id="serverInput" placeholder="サーバ名 (例: mastodon.social)" style="margin: 10px 0; padding: 5px;">
+<button id="checkButton" style="margin: 10px 0; padding: 5px;">確認</button>
+<div id="profile" style="margin-top: 20px; border: 1px solid gray; padding: 10px; display: none;"></div>
+<button id="followButton" style="margin: 10px 0; padding: 5px; display: none;">フォロー</button>
 
 <script>
     const checkButton = document.getElementById('checkButton');
