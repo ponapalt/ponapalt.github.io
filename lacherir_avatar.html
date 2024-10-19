@@ -1,0 +1,59 @@
+---
+title: てくてく
+layout: post
+---
+
+<p>pictsquareで使っていたラーシェアバターのデモ</p>
+
+<canvas id="gameCanvas" width="32" height="32" style="padding: 2em;"></canvas>
+
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    const spriteSheet = new Image();
+    spriteSheet.src = 'image/lacherir_avatar.png';
+
+    let currentDirection = 0; // 0: 正面, 1: 右, 2: 後ろ, 3: 左
+    let currentFrame = 1; // 1列目からスタート
+    let frameCount = 0;
+    const framesPerDirection = 40; // 2秒 * 20FPS
+    const animationSpeed = 200; // ミリ秒
+    let lastFrameTime = 0;
+
+    const frameSequence = [1, 0, 1, 2]; // 2列目→1列目→2列目→3列目
+    let sequenceIndex = 0;
+
+    function getFrameCoords(direction, frame) {
+        const x = frame * 32;
+        const y = direction * 32;
+        return { x, y };
+    }
+
+    function animate(currentTime) {
+        if (currentTime - lastFrameTime > animationSpeed) {
+            frameCount++;
+            sequenceIndex = (sequenceIndex + 1) % frameSequence.length;
+            currentFrame = frameSequence[sequenceIndex];
+            
+            if (frameCount >= framesPerDirection) {
+                currentDirection = (currentDirection + 1) % 4;
+                frameCount = 0;
+                sequenceIndex = 0; // 新しい方向に変わるときにシーケンスをリセット
+            }
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const { x, y } = getFrameCoords(currentDirection, currentFrame);
+            ctx.drawImage(spriteSheet, x, y, 32, 32, 0, 0, 32, 32);
+
+            lastFrameTime = currentTime;
+        }
+
+        requestAnimationFrame(animate);
+    }
+
+    spriteSheet.onload = () => {
+        requestAnimationFrame(animate);
+    };
+</script>
