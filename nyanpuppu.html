@@ -3,183 +3,282 @@ title: にゃんエンコ
 layout: post
 ---
 
-<p>にゃんエンコ（v0.014-p-jekyll）</p>
+<style>
+    .container {
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+    }
+    h2 {
+        margin-bottom: 15px;
+    }
+    .input-group {
+        margin-bottom: 15px;
+    }
+    textarea {
+        width: 97%;
+        min-height: 5em;
+        margin: 10px 0;
+        padding: 10px;
+        font-size: 16px;
+    }
+    button {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+    }
+    .warning {
+        color: #f00;
+        margin-top: 5px;
+        font-size: 14px;
+    }
+</style>
 
-<p>入力した平仮名文字を、うかどんのにゃんぷっぷーにエンコードします。改行・余白対応。</p>
+<p>にゃんエンコ（v0.100-p-jekyll）</p>
 
-<textarea id="inputText" placeholder="ひらがな入力" rows="5" style="width: 100%; box-sizing: border-box;"></textarea>
-<textarea id="outputText" placeholder="結果" readonly rows="5" style="width: 100%; box-sizing: border-box;"></textarea>
-<button onclick="copyToClipboard()">コピー</button>
-<div id="warningMessage" style="color: red;"></div>
+<p>入力した平仮名文字を、うかどんのにゃんぷっぷーにエンコード・デコードします。改行・余白対応。</p>
+
+<div class="container">
+    <h2>エンコード（通常文字→絵文字コード）</h2>
+    <div class="input-group">
+        <textarea id="encodeInput" placeholder="ここに変換したい文字を入力してください"></textarea>
+        <div id="encodeWarning" class="warning"></div>
+        <textarea id="encodeOutput" readonly placeholder="変換された文字列がここに表示されます"></textarea>
+        <button onclick="copyToClipboard('encodeOutput')">結果をコピー</button>
+    </div>
+</div>
+
+<div class="container">
+    <h2>デコード（絵文字コード→通常文字）</h2>
+    <div class="input-group">
+        <textarea id="decodeInput" placeholder="ここに変換したい絵文字コードを入力してください"></textarea>
+        <div id="decodeWarning" class="warning"></div>
+        <textarea id="decodeOutput" readonly placeholder="変換された文字列がここに表示されます"></textarea>
+        <button onclick="copyToClipboard('decodeOutput')">結果をコピー</button>
+    </div>
+</div>
 
 <script>
-    document.getElementById('inputText').addEventListener('input', encodeText);
-const map = {
-    // 数字
-    '０': ':u_nyanpuppu__0:',
-    '１': ':u_nyanpuppu__1:',
-    '２': ':u_nyanpuppu__2:',
-    '３': ':u_nyanpuppu__3:',
-    '４': ':u_nyanpuppu__4:',
-    '５': ':u_nyanpuppu__5:',
-    '６': ':u_nyanpuppu__6:',
-    '７': ':u_nyanpuppu__7:',
-    '８': ':u_nyanpuppu__8:',
-    '９': ':u_nyanpuppu__9:',
-    '0': ':u_nyanpuppu__0:',
-    '1': ':u_nyanpuppu__1:',
-    '2': ':u_nyanpuppu__2:',
-    '3': ':u_nyanpuppu__3:',
-    '4': ':u_nyanpuppu__4:',
-    '5': ':u_nyanpuppu__5:',
-    '6': ':u_nyanpuppu__6:',
-    '7': ':u_nyanpuppu__7:',
-    '8': ':u_nyanpuppu__8:',
-    '9': ':u_nyanpuppu__9:',
-  
-    // ひらがな全音
-    'あ': ':u_nyanpuppu__a:',
-    'い': ':u_nyanpuppu__i:',
-    'う': ':u_nyanpuppu__u:',
-    'え': ':u_nyanpuppu__e:',
-    'お': ':u_nyanpuppu__o:',
-    'か': ':u_nyanpuppu_ka:',
-    'き': ':u_nyanpuppu_ki:',
-    'く': ':u_nyanpuppu_ku:',
-    'け': ':u_nyanpuppu_ke:',
-    'こ': ':u_nyanpuppu_ko:',
-    'さ': ':u_nyanpuppu_sa:',
-    'し': ':u_nyanpuppu_si:',
-    'す': ':u_nyanpuppu_su:',
-    'せ': ':u_nyanpuppu_se:',
-    'そ': ':u_nyanpuppu_so:',
-    'た': ':u_nyanpuppu_ta:',
-    'ち': ':u_nyanpuppu_ti:',
-    'つ': ':u_nyanpuppu_tu:',
-    'て': ':u_nyanpuppu_te:',
-    'と': ':u_nyanpuppu_to:',
-    'な': ':u_nyanpuppu_na:',
-    'に': ':u_nyanpuppu_ni:',
-    'ぬ': ':u_nyanpuppu_nu:',
-    'ね': ':u_nyanpuppu_ne:',
-    'の': ':u_nyanpuppu_no:',
-    'は': ':u_nyanpuppu_ha:',
-    'ひ': ':u_nyanpuppu_hi:',
-    'ふ': ':u_nyanpuppu_hu:',
-    'へ': ':u_nyanpuppu_he:',
-    'ほ': ':u_nyanpuppu_ho:',
-    'ま': ':u_nyanpuppu_ma:',
-    'み': ':u_nyanpuppu_mi:',
-    'む': ':u_nyanpuppu_mu:',
-    'め': ':u_nyanpuppu_me:',
-    'も': ':u_nyanpuppu_mo:',
-    'や': ':u_nyanpuppu_ya:',
-    'ゆ': ':u_nyanpuppu_yu:',
-    'よ': ':u_nyanpuppu_yo:',
-    'ら': ':u_nyanpuppu_ra:',
-    'り': ':u_nyanpuppu_ri:',
-    'る': ':u_nyanpuppu_ru:',
-    'れ': ':u_nyanpuppu_re:',
-    'ろ': ':u_nyanpuppu_ro:',
-    'わ': ':u_nyanpuppu_wa:',
-    'を': ':u_nyanpuppu_wo:',
-    'ん': ':u_nyanpuppu_nn:',
-    
-    // 濁点
-    'が': ':u_nyanpuppu_ga:',
-    'ぎ': ':u_nyanpuppu_gi:',
-    'ぐ': ':u_nyanpuppu_gu:',
-    'げ': ':u_nyanpuppu_ge:',
-    'ご': ':u_nyanpuppu_go:',
-    'ざ': ':u_nyanpuppu_za:',
-    'じ': ':u_nyanpuppu_zi:',
-    'ず': ':u_nyanpuppu_zu:',
-    'ぜ': ':u_nyanpuppu_ze:',
-    'ぞ': ':u_nyanpuppu_zo:',
-    'だ': ':u_nyanpuppu_da:',
-    'ぢ': ':u_nyanpuppu_di:',
-    'づ': ':u_nyanpuppu_du:',
-    'で': ':u_nyanpuppu_de:',
-    'ど': ':u_nyanpuppu_do:',
-    'ば': ':u_nyanpuppu_ba:',
-    'び': ':u_nyanpuppu_bi:',
-    'ぶ': ':u_nyanpuppu_bu:',
-    'べ': ':u_nyanpuppu_be:',
-    'ぼ': ':u_nyanpuppu_bo:',
-    
-    // 半濁点
-    'ぱ': ':u_nyanpuppu_pa:',
-    'ぴ': ':u_nyanpuppu_pi:',
-    'ぷ': ':u_nyanpuppu_pu:',
-    'ぺ': ':u_nyanpuppu_pe:',
-    'ぽ': ':u_nyanpuppu_po:',
+// DOMContentLoadedイベントで初期化を行う
+document.addEventListener('DOMContentLoaded', function() {
+    // 元の文字から絵文字コードへのマッピング
+    const encodeMap = {
+        // 数字
+        '０': ':u_nyanpuppu__0:',
+        '１': ':u_nyanpuppu__1:',
+        '２': ':u_nyanpuppu__2:',
+        '３': ':u_nyanpuppu__3:',
+        '４': ':u_nyanpuppu__4:',
+        '５': ':u_nyanpuppu__5:',
+        '６': ':u_nyanpuppu__6:',
+        '７': ':u_nyanpuppu__7:',
+        '８': ':u_nyanpuppu__8:',
+        '９': ':u_nyanpuppu__9:',
+        '0': ':u_nyanpuppu__0:',
+        '1': ':u_nyanpuppu__1:',
+        '2': ':u_nyanpuppu__2:',
+        '3': ':u_nyanpuppu__3:',
+        '4': ':u_nyanpuppu__4:',
+        '5': ':u_nyanpuppu__5:',
+        '6': ':u_nyanpuppu__6:',
+        '7': ':u_nyanpuppu__7:',
+        '8': ':u_nyanpuppu__8:',
+        '9': ':u_nyanpuppu__9:',
+      
+        // ひらがな全音
+        'あ': ':u_nyanpuppu__a:',
+        'い': ':u_nyanpuppu__i:',
+        'う': ':u_nyanpuppu__u:',
+        'え': ':u_nyanpuppu__e:',
+        'お': ':u_nyanpuppu__o:',
+        'か': ':u_nyanpuppu_ka:',
+        'き': ':u_nyanpuppu_ki:',
+        'く': ':u_nyanpuppu_ku:',
+        'け': ':u_nyanpuppu_ke:',
+        'こ': ':u_nyanpuppu_ko:',
+        'さ': ':u_nyanpuppu_sa:',
+        'し': ':u_nyanpuppu_si:',
+        'す': ':u_nyanpuppu_su:',
+        'せ': ':u_nyanpuppu_se:',
+        'そ': ':u_nyanpuppu_so:',
+        'た': ':u_nyanpuppu_ta:',
+        'ち': ':u_nyanpuppu_ti:',
+        'つ': ':u_nyanpuppu_tu:',
+        'て': ':u_nyanpuppu_te:',
+        'と': ':u_nyanpuppu_to:',
+        'な': ':u_nyanpuppu_na:',
+        'に': ':u_nyanpuppu_ni:',
+        'ぬ': ':u_nyanpuppu_nu:',
+        'ね': ':u_nyanpuppu_ne:',
+        'の': ':u_nyanpuppu_no:',
+        'は': ':u_nyanpuppu_ha:',
+        'ひ': ':u_nyanpuppu_hi:',
+        'ふ': ':u_nyanpuppu_hu:',
+        'へ': ':u_nyanpuppu_he:',
+        'ほ': ':u_nyanpuppu_ho:',
+        'ま': ':u_nyanpuppu_ma:',
+        'み': ':u_nyanpuppu_mi:',
+        'む': ':u_nyanpuppu_mu:',
+        'め': ':u_nyanpuppu_me:',
+        'も': ':u_nyanpuppu_mo:',
+        'や': ':u_nyanpuppu_ya:',
+        'ゆ': ':u_nyanpuppu_yu:',
+        'よ': ':u_nyanpuppu_yo:',
+        'ら': ':u_nyanpuppu_ra:',
+        'り': ':u_nyanpuppu_ri:',
+        'る': ':u_nyanpuppu_ru:',
+        'れ': ':u_nyanpuppu_re:',
+        'ろ': ':u_nyanpuppu_ro:',
+        'わ': ':u_nyanpuppu_wa:',
+        'を': ':u_nyanpuppu_wo:',
+        'ん': ':u_nyanpuppu_nn:',
+        
+        // 濁点
+        'が': ':u_nyanpuppu_ga:',
+        'ぎ': ':u_nyanpuppu_gi:',
+        'ぐ': ':u_nyanpuppu_gu:',
+        'げ': ':u_nyanpuppu_ge:',
+        'ご': ':u_nyanpuppu_go:',
+        'ざ': ':u_nyanpuppu_za:',
+        'じ': ':u_nyanpuppu_zi:',
+        'ず': ':u_nyanpuppu_zu:',
+        'ぜ': ':u_nyanpuppu_ze:',
+        'ぞ': ':u_nyanpuppu_zo:',
+        'だ': ':u_nyanpuppu_da:',
+        'ぢ': ':u_nyanpuppu_di:',
+        'づ': ':u_nyanpuppu_du:',
+        'で': ':u_nyanpuppu_de:',
+        'ど': ':u_nyanpuppu_do:',
+        'ば': ':u_nyanpuppu_ba:',
+        'び': ':u_nyanpuppu_bi:',
+        'ぶ': ':u_nyanpuppu_bu:',
+        'べ': ':u_nyanpuppu_be:',
+        'ぼ': ':u_nyanpuppu_bo:',
+        
+        // 半濁点
+        'ぱ': ':u_nyanpuppu_pa:',
+        'ぴ': ':u_nyanpuppu_pi:',
+        'ぷ': ':u_nyanpuppu_pu:',
+        'ぺ': ':u_nyanpuppu_pe:',
+        'ぽ': ':u_nyanpuppu_po:',
 
-    // 小文字
-    'ぁ': ':u_nyanpuppu_xa:',
-    'ぃ': ':u_nyanpuppu_xi:',
-    'ぅ': ':u_nyanpuppu_xu:',
-    'ぇ': ':u_nyanpuppu_xe:',
-    'ぉ': ':u_nyanpuppu_xo:',
-    'ゃ': ':u_nyanpuppu_xya:',
-    'ゅ': ':u_nyanpuppu_xyu:',
-    'ょ': ':u_nyanpuppu_xyo:',
-    'っ': ':u_nyanpuppu_xtu:',
-    
-    // 記号・特殊文字
-    '。': ':u_nyanpuppu_zz_dot:',
-    '、': ':u_nyanpuppu_zz_comma:',
-    'ー': ':u_nyanpuppu_extend:',
-    '・': ':u_nyanpuppu_zz_bullet:',
-    '・': ':u_nyanpuppu_zz_bullet:',
-    '。': ':u_nyanpuppu_zz_dot:',
-    '、': ':u_nyanpuppu_zz_comma:',
-    '！': ':u_nyanpuppu_zz_exclamation:',
-    '？': ':u_nyanpuppu_zz_question:',
-    '「': ':u_nyanpuppu_zz_quote_open:',
-    '」': ':u_nyanpuppu_zz_quote_close:',
-    '（': ':u_nyanpuppu_zz_bracket_open:',
-    '）': ':u_nyanpuppu_zz_bracket_close:',
-    '♥': ':u_nyanpuppu_zz_heart:',
-    '♪': ':u_nyanpuppu_zz_music_note:',
-    '★': ':u_nyanpuppu_zz_star:',
-    
-    // 全角スペース
-    '　': ':blank:',
-};
+        // 小文字
+        'ぁ': ':u_nyanpuppu_xa:',
+        'ぃ': ':u_nyanpuppu_xi:',
+        'ぅ': ':u_nyanpuppu_xu:',
+        'ぇ': ':u_nyanpuppu_xe:',
+        'ぉ': ':u_nyanpuppu_xo:',
+        'ゃ': ':u_nyanpuppu_xya:',
+        'ゅ': ':u_nyanpuppu_xyu:',
+        'ょ': ':u_nyanpuppu_xyo:',
+        'っ': ':u_nyanpuppu_xtu:',
+        
+        // 記号・特殊文字
+        '。': ':u_nyanpuppu_zz_dot:',
+        '、': ':u_nyanpuppu_zz_comma:',
+        'ー': ':u_nyanpuppu_extend:',
+        '・': ':u_nyanpuppu_zz_bullet:',
+        '！': ':u_nyanpuppu_zz_exclamation:',
+        '？': ':u_nyanpuppu_zz_question:',
+        '「': ':u_nyanpuppu_zz_quote_open:',
+        '」': ':u_nyanpuppu_zz_quote_close:',
+        '（': ':u_nyanpuppu_zz_bracket_open:',
+        '）': ':u_nyanpuppu_zz_bracket_close:',
+        '♥': ':u_nyanpuppu_zz_heart:',
+        '♪': ':u_nyanpuppu_zz_music_note:',
+        '★': ':u_nyanpuppu_zz_star:',
+        
+        // 全角スペース
+        '　': ':blank:'
+    };
 
+    // 絵文字コードから元の文字へのマッピングを生成
+    const decodeMap = {};
+    for (const [char, code] of Object.entries(encodeMap)) {
+        decodeMap[code] = char;
+    }
+
+    // エンコード関数
     function encodeText() {
-        const inputText = document.getElementById('inputText').value;
+        const inputText = document.getElementById('encodeInput').value;
         let outputText = '';
         let unknownCharacters = new Set();
 
         for (const char of inputText) {
             if (char === ' ') {
-                document.getElementById('warningMessage').innerText = '警告：半角スペースは使用できません。';
+                document.getElementById('encodeWarning').innerText = '警告：半角スペースは使用できません。';
                 continue;
             }
-            if (map[char]) {
-                outputText += map[char];
+            if (encodeMap[char]) {
+                outputText += encodeMap[char];
             } else if (char === '\n') {
-                outputText += char;  // 改行はそのまま。
+                outputText += char;
             } else {
-                outputText += char;  // マッピングがないなら元の文字。
+                outputText += char;
                 unknownCharacters.add(char);
             }
-            outputText += "\u200B";  // ゼロ幅スペース。
+            outputText += "\u200B"; // ゼロ幅スペース
         }
 
-        document.getElementById('outputText').value = outputText;
+        document.getElementById('encodeOutput').value = outputText;
 
         if (unknownCharacters.size > 0) {
-            document.getElementById('warningMessage').innerText += '警告：以下の文字はマッピングが定義されていません：' + Array.from(unknownCharacters).join(', ');
+            document.getElementById('encodeWarning').innerText = 
+                '警告：以下の文字はマッピングが定義されていません：' + Array.from(unknownCharacters).join(', ');
         } else {
-            document.getElementById('warningMessage').innerText = '';
+            document.getElementById('encodeWarning').innerText = '';
         }
     }
 
-    function copyToClipboard() {
-        const copyText = document.getElementById("outputText");
+    // デコード関数
+    function decodeText() {
+        const inputText = document.getElementById('decodeInput').value;
+        let outputText = '';
+        let unknownCodes = new Set();
+        
+        // ゼロ幅スペースを除去し、:u_nyanpuppu_で始まるコードを抽出
+        const codes = inputText.replace(/\u200B/g, '').match(/:u_nyanpuppu_[^:]+:|:blank:/g) || [];
+        
+        if (codes.length === 0) {
+            const cleanInput = inputText.replace(/\u200B/g, '');
+            outputText = cleanInput;
+            document.getElementById('decodeWarning').innerText = 
+                '警告：有効な絵文字コードが見つかりません。';
+        } else {
+            for (const code of codes) {
+                if (decodeMap[code]) {
+                    outputText += decodeMap[code];
+                } else {
+                    outputText += code;
+                    unknownCodes.add(code);
+                }
+            }
+        }
+
+        document.getElementById('decodeOutput').value = outputText;
+
+        if (unknownCodes.size > 0) {
+            document.getElementById('decodeWarning').innerText = 
+                '警告：以下のコードは認識できません：' + Array.from(unknownCodes).join(', ');
+        } else if (codes.length > 0) {
+            document.getElementById('decodeWarning').innerText = '';
+        }
+    }
+
+    // クリップボードにコピーする関数
+    function copyToClipboard(elementId) {
+        const copyText = document.getElementById(elementId);
         copyText.select();
         document.execCommand("copy");
     }
+
+    // イベントリスナーの設定
+    document.getElementById('encodeInput').addEventListener('input', encodeText);
+    document.getElementById('decodeInput').addEventListener('input', decodeText);
+
+    // グローバルスコープに関数を公開
+    window.copyToClipboard = copyToClipboard;
+});
 </script>
