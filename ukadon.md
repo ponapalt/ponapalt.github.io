@@ -25,13 +25,17 @@ title: うかどん
 
 以下のツールにユーザー名とサーバ名を入力して、エラーが出ず相手のプロフィールが出ればフォローできます。
 
-- https://ponadocs.shillest.net/followtool.html
+- <https://ponadocs.shillest.net/followtool.html>
 
 ## UIの変更
 
 後はまあなんとなくTwitter/Xっぽい感じなので、いい感じで操作していただければわかるかと思います。
 
 なんか1画面あたりの情報が薄いなあと思う人は、ユーザー設定-外観、から上級者向けUIを有効にするとTweetDeckっぽくなりますし、昔登録してこのチェックが入ったままの人は、外すとなんかいまどきのTwitter/Xっぽくなります。
+
+もっとカスタムしたい人向けに、専用のChromeの拡張機能もあります。
+
+- <https://github.com/ambergon/chromeExtension_mastodonTheme>
 
 ## 投稿スタイルの選択
 
@@ -63,7 +67,7 @@ title: うかどん
 
 情報収集と宣伝に活用してみてください。
 
-- https://hashtag-relay.dtp-mstdn.jp/
+- <https://hashtag-relay.dtp-mstdn.jp/>
 
 ## 更新ポリシー
 
@@ -75,15 +79,27 @@ title: うかどん
 
 にぎやかし用てつわんこLLM Botを運営しています。適当にあることないことしゃべりまくるし返事もするので暇つぶしにどうぞ。
 
-- https://ukadon.shillest.net/@lacherir
+- <https://ukadon.shillest.net/@lacherir>
 
 にゃんぷっぷーエンコーダ：平仮名・数字をにゃんぷっぷーカスタム絵文字に変換します。
 
-- https://ponadocs.shillest.net/nyanpupp
+- <https://ponadocs.shillest.net/nyanpupp>
+
+更新したらほめてもらうシステム：ゴーストを更新したらほめてくれます。
+
+- <http://nanachi.sakura.ne.jp/extproj/homete_update/index.php>
+
+うかフィード/湯空さとり：伺か関係のニュースを流してくれます。
+
+- <https://ukadon.shillest.net/@tootghost_dev>
+
+ゴーストキャプターさくら：ゴーストの半リアルタイム全自動更新情報です。
+
+- <https://ukadon.shillest.net/@GCSakura>
 
 ## カンパ窓口
 
 サーバ代やLLM Bot代を支援してくださる超奇特な方はこちらへどうぞ。
 
-- https://ponapalt.fanbox.cc/
+- <https://ponapalt.fanbox.cc/>
 
