@@ -2,6 +2,8 @@ theme: minima
 title: ばぐとら研ファイル置き場
 description: 雑多なファイル置き場です。
 locale: ja_JP
+header_pages:
+  - index.md
 minima:
   skin: solarized
   social_links:
