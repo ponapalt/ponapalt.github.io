@@ -3,10 +3,16 @@ title: ばぐとら研ファイル置き場
 description: 雑多なファイル置き場です。
 locale: ja_JP
 header_pages:
-  - index.md
+  - ukadon.md
+  - nyanpuppu.html
+  - followtool.html
+  - lacherir.md
 minima:
   skin: solarized
   social_links:
-    - { platform: github,  user_url: "https://github.com/ponapalt" }
-    - { platform: x, user_url: "https://x.com/ponapalt" }
-    - { platform: mastodon, user_url: "https://ukadon.shillest.net/@ponapalt" }
+    - platform: github
+      user_url: "https://github.com/ponapalt"
+    - platform: x
+      user_url: "https://x.com/ponapalt"
+    - platform: mastodon
+      user_url: "https://ukadon.shillest.net/@ponapalt"
