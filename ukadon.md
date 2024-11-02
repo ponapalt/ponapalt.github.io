@@ -29,7 +29,7 @@ title: うかどん
 
 以下のツールにユーザー名とサーバ名を入力して、エラーが出ず相手のプロフィールが出ればフォローできます。
 
-- <followtool.html>
+- <https://ponadocs.shillest.net/followtool.html>
 
 ## UIの変更
 
@@ -101,7 +101,7 @@ title: うかどん
 
 平仮名・数字をにゃんぷっぷーカスタム絵文字に変換します。逆変換もできます。
 
-- <nyanpuppu.html>
+- <https://ponadocs.shillest.net/nyanpuppu.html>
 
 ### 更新したらほめてもらうシステム
 
