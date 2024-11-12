@@ -3,8 +3,9 @@ title: ばぐとら研ファイル置き場
 description: 雑多なファイル置き場です。
 locale: ja_JP
 header_pages:
-  - nyanpuppu.html
   - ukadon.md
+  - nyanpuppu.html
+  - followtool.html
   - lacherir.md
 minima:
   skin: solarized
