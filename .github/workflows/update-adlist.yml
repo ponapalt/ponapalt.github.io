@@ -5,17 +5,12 @@ on:
     - cron: '0 0 * * *'  # 毎日00:00に実行
   workflow_dispatch:      # 手動実行も可能
 
-# GitHub Pages へのデプロイに必要な権限
 permissions:
-  pages: write
-  id-token: write
+  contents: write
 
 jobs:
   update-adlist:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v3
       
@@ -27,14 +22,10 @@ jobs:
       - name: Generate adlist
         run: python script/generate_adlist.py
       
-      - name: Setup Pages
-        uses: actions/configure-pages@v4
-      
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: 'adlist.txt'
-      
       - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+        run: |
+          git config --global user.name 'GitHub Actions'
+          git config --global user.email 'actions@github.com'
+          git add adlist.txt
+          git commit -m "Update adlist.txt - $(date '+%Y-%m-%d')" || exit 0
+          git push
