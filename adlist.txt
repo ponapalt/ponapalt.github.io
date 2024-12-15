@@ -1,6 +1,6 @@
-# Generated at: 2024-12-14 00:59:32
+# Generated at: 2024-12-15 01:06:02
 # Source: https://adguardteam.github.io/AdGuardSDNSFilter/Filters/filter.txt
-# Total domains: 57634
+# Total domains: 57644
 
 0.0.0.0 0.code.cotsta.ru
 0.0.0.0 0.myikas.com
@@ -918,6 +918,7 @@
 0.0.0.0 3j8c56p9.de
 0.0.0.0 3kbktygzr5.ru
 0.0.0.0 3lift.com
+0.0.0.0 3lo.icu
 0.0.0.0 3lr67y45.com
 0.0.0.0 3lucosy.com
 0.0.0.0 3mhg.online
@@ -4872,6 +4873,7 @@
 0.0.0.0 aiftakrenge.com
 0.0.0.0 aigaithojo.com
 0.0.0.0 aigenstud.com
+0.0.0.0 aigfednd.icu
 0.0.0.0 aigheebsu.net
 0.0.0.0 aigneloa.com
 0.0.0.0 aignewha.com
@@ -11655,6 +11657,7 @@
 0.0.0.0 chokertraffic.com
 0.0.0.0 chokeweaknessheat.com
 0.0.0.0 cholatetapalos.com
+0.0.0.0 chonaesor.com
 0.0.0.0 chong-wu.net
 0.0.0.0 choobatchautoo.net
 0.0.0.0 choocmailt.com
@@ -26365,6 +26368,7 @@
 0.0.0.0 iththinleldedallov.info
 0.0.0.0 itikiab.com
 0.0.0.0 itim.vn
+0.0.0.0 itimiyo.top
 0.0.0.0 itineraryborn.com
 0.0.0.0 itinerarymonarchy.com
 0.0.0.0 itishindia.cfd
@@ -27067,6 +27071,7 @@
 0.0.0.0 jozbun.icu
 0.0.0.0 jp-axia.m0mentum.net
 0.0.0.0 jp.twww.sbs
+0.0.0.0 jp1media.com
 0.0.0.0 jpaasne.e.shifen.com
 0.0.0.0 jpalertcert.com
 0.0.0.0 jpcctez.icu
@@ -27214,6 +27219,7 @@
 0.0.0.0 jsyliea.top
 0.0.0.0 jtbo*.nqxvevk.cn
 0.0.0.0 jtezxmpb.xyz
+0.0.0.0 jtimiya.top
 0.0.0.0 jtkjixnmj.org
 0.0.0.0 jtp.expressen.se
 0.0.0.0 jtqqzvqrd.net
@@ -39793,6 +39799,7 @@
 0.0.0.0 qlnkt.com
 0.0.0.0 qlnomb.com
 0.0.0.0 qlog.adap.tv
+0.0.0.0 qm2.icu
 0.0.0.0 qmaacxajsovk.com
 0.0.0.0 qmahepzo.one
 0.0.0.0 qmbdta.cn
@@ -52719,6 +52726,7 @@
 0.0.0.0 veezudeedou.net
 0.0.0.0 vefun.net
 0.0.0.0 vegabet.net
+0.0.0.0 vegaingi.com
 0.0.0.0 vegetablesparrotplus.com
 0.0.0.0 vegetationadmirable.com
 0.0.0.0 vegetationartcocoa.com
@@ -54170,6 +54178,7 @@
 0.0.0.0 vyocqq.com
 0.0.0.0 vyriglq.cn
 0.0.0.0 vyrpoe.cn
+0.0.0.0 vyrqhmdy.unbrws.de
 0.0.0.0 vz.7vid.net
 0.0.0.0 vzdkngmf.icu
 0.0.0.0 vzeakntvvkc.one
@@ -56310,6 +56319,7 @@
 0.0.0.0 xulizui6.com
 0.0.0.0 xunsfr.xyz
 0.0.0.0 xuoizbtl.xyz
+0.0.0.0 xupalace.org
 0.0.0.0 xuqza.com
 0.0.0.0 xuugnuits.com
 0.0.0.0 xuxwvh.xyz
