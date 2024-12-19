@@ -1,6 +1,6 @@
-# Generated at: 2024-12-18 00:58:44
+# Generated at: 2024-12-19 00:59:23
 # Source: https://adguardteam.github.io/AdGuardSDNSFilter/Filters/filter.txt
-# Total domains: 57675
+# Total domains: 57696
 
 0.0.0.0 0.code.cotsta.ru
 0.0.0.0 0.myikas.com
@@ -1062,6 +1062,7 @@
 0.0.0.0 4sqt6jq.de
 0.0.0.0 4stats.de
 0.0.0.0 4t6u.icu
+0.0.0.0 4we.icu
 0.0.0.0 4wfe3.icu
 0.0.0.0 4wnet.com
 0.0.0.0 4wnetwork.com
@@ -10030,6 +10031,7 @@
 0.0.0.0 bsvhxfxckrmixla.xyz
 0.0.0.0 bsvkfwth.xyz
 0.0.0.0 bsxmuny.wp.pl
+0.0.0.0 bt.dns-finder.com
 0.0.0.0 bt.mediaimpact.de
 0.0.0.0 bt1.patexplorer.com
 0.0.0.0 btagmedia.com
@@ -11224,6 +11226,7 @@
 0.0.0.0 cee1.iteye.com
 0.0.0.0 ceebethoatha.com
 0.0.0.0 ceebikoph.com
+0.0.0.0 ceefsyqotuagk.com
 0.0.0.0 ceegriwuwoa.net
 0.0.0.0 ceeheesa.com
 0.0.0.0 ceekougy.net
@@ -17113,6 +17116,7 @@
 0.0.0.0 down1oads.com
 0.0.0.0 download-adblock-zen.com
 0.0.0.0 download-alert.com
+0.0.0.0 download-privacybear.com
 0.0.0.0 download-ready.net
 0.0.0.0 download-stats.mozilla.org
 0.0.0.0 download.350.com
@@ -18064,6 +18068,7 @@
 0.0.0.0 edw.edmunds.com
 0.0.0.0 ee.m08pe.cn
 0.0.0.0 ee.shixunwang.net
+0.0.0.0 ee5.icu
 0.0.0.0 ee625e4b1d.com
 0.0.0.0 eeaczcf.icu
 0.0.0.0 eecd.xyz
@@ -18313,6 +18318,7 @@
 0.0.0.0 ellingsen.cn
 0.0.0.0 elliotannouncing.com
 0.0.0.0 ellipticaldatabase.pro
+0.0.0.0 elloisny.com
 0.0.0.0 elmasistatistik.com.tr
 0.0.0.0 elmonopolicycr.info
 0.0.0.0 eloawiphi.net
@@ -22158,6 +22164,7 @@
 0.0.0.0 glaiwhee.net
 0.0.0.0 glaixich.net
 0.0.0.0 glakaits.net
+0.0.0.0 glamipixel.com
 0.0.0.0 glamorousmixture.com
 0.0.0.0 glamurka.net
 0.0.0.0 glancedforgave.com
@@ -27924,6 +27931,7 @@
 0.0.0.0 kliqz.com
 0.0.0.0 klivz.com
 0.0.0.0 klixfeed.com
+0.0.0.0 kljhsanvj.com
 0.0.0.0 klkk66.fun
 0.0.0.0 klldabck.com
 0.0.0.0 klmainprost.com
@@ -28745,6 +28753,7 @@
 0.0.0.0 lditsdebriisar.cfd
 0.0.0.0 ldjcteyoq.com
 0.0.0.0 ldjudcpc-qxm.icu
+0.0.0.0 ldjyvegage.com
 0.0.0.0 ldmeukeuktyoue.com
 0.0.0.0 ldoshbl.top
 0.0.0.0 ldp.page
@@ -28844,6 +28853,7 @@
 0.0.0.0 leechiza.net
 0.0.0.0 leefosto.com
 0.0.0.0 leegaroo.xyz
+0.0.0.0 leegreemula.net
 0.0.0.0 leepephah.com
 0.0.0.0 leeptoadeesh.net
 0.0.0.0 leesaushoah.net
@@ -34572,6 +34582,7 @@
 0.0.0.0 nr.static.mmcdn.com
 0.0.0.0 nr7.us
 0.0.0.0 nrbqgf.cn
+0.0.0.0 nrbwzh.icu
 0.0.0.0 nrc.tapas.net
 0.0.0.0 nrcykmnukb.com
 0.0.0.0 nreg.world
@@ -35966,6 +35977,7 @@
 0.0.0.0 othersonline.com
 0.0.0.0 otherwiseassurednessloaf.com
 0.0.0.0 otik.de
+0.0.0.0 otimiyk.top
 0.0.0.0 otingolston.com
 0.0.0.0 otisephie.com
 0.0.0.0 otjawzdugg.com
@@ -38001,6 +38013,7 @@
 0.0.0.0 poemswrestlingstrategy.com
 0.0.0.0 poeticmetric.com
 0.0.0.0 poetrydeteriorate.com
+0.0.0.0 pofbpx.icu
 0.0.0.0 poflix.com
 0.0.0.0 pofmnj.xyz
 0.0.0.0 poghaurs.com
@@ -38364,6 +38377,7 @@
 0.0.0.0 pphiresandala.info
 0.0.0.0 pphwrevr.com
 0.0.0.0 ppimdog.com
+0.0.0.0 ppio12181ios.top
 0.0.0.0 ppixufsalgm.com
 0.0.0.0 ppjdfki.com
 0.0.0.0 ppjqgbz.com
@@ -42778,6 +42792,7 @@
 0.0.0.0 scisselfungus.com
 0.0.0.0 scissorsstitchdegrade.com
 0.0.0.0 scissorwailed.com
+0.0.0.0 sckyf.com
 0.0.0.0 scl6gc5l.site
 0.0.0.0 sclrnnp.com
 0.0.0.0 scmn0di.com
@@ -43231,11 +43246,12 @@
 0.0.0.0 sentry.footballiapp.com
 0.0.0.0 sentry.hamravesh.com
 0.0.0.0 sentry.malltina.com
+0.0.0.0 sentry.mci.dev
 0.0.0.0 sentry.mediacdn.vn
 0.0.0.0 sentry.mielse.com
 0.0.0.0 sentry.namava.ir
 0.0.0.0 sentry.outbid.io
-0.0.0.0 sentry.quera.org
+0.0.0.0 sentry.querastaff.ir
 0.0.0.0 sentry.virgool.io
 0.0.0.0 sentry01.zerg.rambler.ru
 0.0.0.0 seo-master.net
@@ -44576,6 +44592,7 @@
 0.0.0.0 skfda5.com
 0.0.0.0 skhf11.com
 0.0.0.0 skhf66.com
+0.0.0.0 skhmjezzj.com
 0.0.0.0 skidgleambrand.com
 0.0.0.0 skierastonishedforensics.com
 0.0.0.0 skiingsettling.com
@@ -46490,6 +46507,7 @@
 0.0.0.0 stolenforensicssausage.com
 0.0.0.0 stomi.info
 0.0.0.0 stongoapti.net
+0.0.0.0 stongors.com
 0.0.0.0 stonkstime.com
 0.0.0.0 stooboastaud.net
 0.0.0.0 stoobsugree.net
@@ -48552,6 +48570,7 @@
 0.0.0.0 threeate.jp
 0.0.0.0 threedrive.su
 0.0.0.0 threeinvincible.com
+0.0.0.0 threkuth.com
 0.0.0.0 threrlak.com
 0.0.0.0 thresholdunusual.com
 0.0.0.0 threwtestimonygrieve.com
@@ -52115,6 +52134,7 @@
 0.0.0.0 utilizeimplore.com
 0.0.0.0 utilizepersonalityillegible.com
 0.0.0.0 utillib.xyz
+0.0.0.0 utimiyt.top
 0.0.0.0 utiq-aws.net
 0.0.0.0 utiq.24auto.de
 0.0.0.0 utiq.24hamburg.de
@@ -57105,6 +57125,7 @@
 0.0.0.0 za.zingnews.vn
 0.0.0.0 zaamgqlgdhac.love
 0.0.0.0 zabanit.xyz
+0.0.0.0 zabpgtjh.icu
 0.0.0.0 zacff.com
 0.0.0.0 zachunsears.com
 0.0.0.0 zacleporis.com
