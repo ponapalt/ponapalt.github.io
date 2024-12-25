@@ -1,6 +1,6 @@
-# Generated at: 2024-12-24 00:56:28
+# Generated at: 2024-12-25 00:55:49
 # Source: https://adguardteam.github.io/AdGuardSDNSFilter/Filters/filter.txt
-# Total domains: 56384
+# Total domains: 56401
 
 0.0.0.0 0.code.cotsta.ru
 0.0.0.0 0.myikas.com
@@ -5200,6 +5200,7 @@
 0.0.0.0 altarrousebrows.com
 0.0.0.0 altastat.com
 0.0.0.0 altcoin.care
+0.0.0.0 altema-log.com
 0.0.0.0 altenlayer.com
 0.0.0.0 alterassumeaggravate.com
 0.0.0.0 alterhimdecorate.com
@@ -10757,6 +10758,7 @@
 0.0.0.0 cdn-adtrue.com
 0.0.0.0 cdn-bongdadem-net.cdn.ampproject.org
 0.0.0.0 cdn-channels-pixel.ex.co
+0.0.0.0 cdn-gw-dv.vip
 0.0.0.0 cdn-image.com
 0.0.0.0 cdn-ketchapp.akamaized.net
 0.0.0.0 cdn-magiclinks.trackonomics.net
@@ -11087,6 +11089,7 @@
 0.0.0.0 cf-eba.everytime.kr
 0.0.0.0 cf-native.karte.io
 0.0.0.0 cf-pixelfront-analytics.widencdn.net
+0.0.0.0 cf.adxcel.com
 0.0.0.0 cf.overblog.com
 0.0.0.0 cf222.art
 0.0.0.0 cf76b8779a.com
@@ -11949,6 +11952,7 @@
 0.0.0.0 clksite.com
 0.0.0.0 clkslvmiwadfsx.xyz
 0.0.0.0 clkstat.china.cn
+0.0.0.0 clktds.org
 0.0.0.0 clkwnl.xyz
 0.0.0.0 cllctr.any.run
 0.0.0.0 clmbtech.com
@@ -15296,7 +15300,6 @@
 0.0.0.0 dberthformttete.com
 0.0.0.0 dbex-tracker-v2.driveback.ru
 0.0.0.0 dbfocus.jp
-0.0.0.0 dbfukofby5ycr.cloudfront.net
 0.0.0.0 dbfv8ylr8ykfg.cloudfront.net
 0.0.0.0 dbizrrslifc.com
 0.0.0.0 dblijd.xyz
@@ -16953,6 +16956,7 @@
 0.0.0.0 drillcompensate.com
 0.0.0.0 drinksbookcaseconsensus.com
 0.0.0.0 dripe.site
+0.0.0.0 drivago.top
 0.0.0.0 drivenetwork.online
 0.0.0.0 drivenetwork.ru
 0.0.0.0 driveniq.com
@@ -23407,6 +23411,7 @@
 0.0.0.0 hfeoveukrn.info
 0.0.0.0 hffxc.com
 0.0.0.0 hfhppxseee.com
+0.0.0.0 hfisngksng.com
 0.0.0.0 hfiwcuodr.com
 0.0.0.0 hfjmvr.xyz
 0.0.0.0 hfjsliu.top
@@ -26831,6 +26836,7 @@
 0.0.0.0 k8ik878i.top
 0.0.0.0 k8trangphim.com
 0.0.0.0 k9gj.site
+0.0.0.0 k9u.icu
 0.0.0.0 kaan.kakao.com
 0.0.0.0 kaascypher.com
 0.0.0.0 kabakamarbles.top
@@ -29086,6 +29092,7 @@
 0.0.0.0 log.polarisoffice.com
 0.0.0.0 log.prezi.com
 0.0.0.0 log.propermessage.io
+0.0.0.0 log.pullcenter.live
 0.0.0.0 log.pvpgang.com
 0.0.0.0 log.quora.com
 0.0.0.0 log.qvb.qcloud.com
@@ -29854,6 +29861,7 @@
 0.0.0.0 m3i0v745b.com
 0.0.0.0 m4su.online
 0.0.0.0 m5.66077.cn
+0.0.0.0 m51.icu
 0.0.0.0 m53frvehb.com
 0.0.0.0 m549z.site
 0.0.0.0 m583.dailydemocrat.com
@@ -39338,6 +39346,7 @@
 0.0.0.0 qwex.ru
 0.0.0.0 qwfh39851jtfvkurf21hf.com
 0.0.0.0 qwiarjayuffn.xyz
+0.0.0.0 qwilmiy.top
 0.0.0.0 qwivhkmuksjodtt.com
 0.0.0.0 qwkmiot.com
 0.0.0.0 qwlbvlyaklmjo.top
@@ -41320,6 +41329,7 @@
 0.0.0.0 rvtfwryz.icu
 0.0.0.0 rvvmynjd.love
 0.0.0.0 rw.marchex.io
+0.0.0.0 rwdjrn.icu
 0.0.0.0 rwhxz.space
 0.0.0.0 rwpgtlurfllti.com
 0.0.0.0 rwrb55.com
@@ -42525,6 +42535,7 @@
 0.0.0.0 sexystat.com
 0.0.0.0 sf-ads.io
 0.0.0.0 sf14g.com
+0.0.0.0 sf16-static.i18n-pglstatp.com
 0.0.0.0 sf16-telemetry-proxy-oci.tiktokcdn-us.com
 0.0.0.0 sfdsplvyphk.com
 0.0.0.0 sfesdef6.fun
@@ -43364,6 +43375,7 @@
 0.0.0.0 shusacem.net
 0.0.0.0 shutesaroph.com
 0.0.0.0 shuttersurveyednaive.com
+0.0.0.0 shuucerz.com
 0.0.0.0 shvhse.com
 0.0.0.0 shvnb.kfcvnpay.com
 0.0.0.0 shvnfhf.com
@@ -43454,6 +43466,7 @@
 0.0.0.0 siiwptfum.xyz
 0.0.0.0 sikapo.top
 0.0.0.0 sikaq.top
+0.0.0.0 sikncs.com
 0.0.0.0 silebu.xyz
 0.0.0.0 silenceblindness.com
 0.0.0.0 silentinevitable.com
@@ -45348,6 +45361,7 @@
 0.0.0.0 statsfa.com
 0.0.0.0 statsforads.com
 0.0.0.0 statsforever.com
+0.0.0.0 statsig.anthropic.com
 0.0.0.0 statsigapi.net
 0.0.0.0 statsinsight.com
 0.0.0.0 statsit.com
@@ -47221,6 +47235,7 @@
 0.0.0.0 tgdaudience.com
 0.0.0.0 tgel2ebtx.ru
 0.0.0.0 tget.me
+0.0.0.0 tghrfv.icu
 0.0.0.0 tgidskii.top
 0.0.0.0 tgknt.com
 0.0.0.0 tgktlgyqsffx.xyz
@@ -48349,6 +48364,7 @@
 0.0.0.0 towersalighthybrids.com
 0.0.0.0 towerslady.com
 0.0.0.0 towersresent.com
+0.0.0.0 towmfs.com
 0.0.0.0 townifybabbie.top
 0.0.0.0 townlife-aff.com
 0.0.0.0 townrusisedpriva.org
@@ -50019,7 +50035,6 @@
 0.0.0.0 twazzyoidwlfe.com
 0.0.0.0 twcount.com
 0.0.0.0 twcouponcenter.com
-0.0.0.0 twdcgrid.com
 0.0.0.0 tweakarrangement.com
 0.0.0.0 tweisii.top
 0.0.0.0 tweizai.top
@@ -52892,6 +52907,7 @@
 0.0.0.0 vrewpywootyu.com
 0.0.0.0 vrgvugostlyhewo.info
 0.0.0.0 vrichshop.com
+0.0.0.0 vriesziy.com
 0.0.0.0 vrime.xyz
 0.0.0.0 vrinqop.icu
 0.0.0.0 vrixon.com
@@ -54592,6 +54608,7 @@
 0.0.0.0 wwhnjrg.com
 0.0.0.0 wwhsxwow.xyz
 0.0.0.0 wwija.com
+0.0.0.0 wwilmie.top
 0.0.0.0 wwjnoafuexamtg.com
 0.0.0.0 wwjtdjj.cn
 0.0.0.0 wwkedpbh4lwdmq16okwhiteiim9nwpds2.com
