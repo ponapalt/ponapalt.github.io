@@ -1,6 +1,6 @@
-# Generated at: 2024-12-25 00:55:49
+# Generated at: 2024-12-26 00:55:50
 # Source: https://adguardteam.github.io/AdGuardSDNSFilter/Filters/filter.txt
-# Total domains: 56401
+# Total domains: 56428
 
 0.0.0.0 0.code.cotsta.ru
 0.0.0.0 0.myikas.com
@@ -1227,6 +1227,7 @@
 0.0.0.0 6c5xnntfvi.com
 0.0.0.0 6ca9278a53.com
 0.0.0.0 6ce02869b9.com
+0.0.0.0 6cs.icu
 0.0.0.0 6de72955d8.com
 0.0.0.0 6e391732a2.com
 0.0.0.0 6e6cd153a6.com
@@ -4674,6 +4675,7 @@
 0.0.0.0 agloogly.com
 0.0.0.0 aglurj.com
 0.0.0.0 aglvtwawyzaa.com
+0.0.0.0 agma-analytics.de
 0.0.0.0 agmed.cyou
 0.0.0.0 agmtrk.com
 0.0.0.0 agnrcrpwyyn.com
@@ -6740,6 +6742,7 @@
 0.0.0.0 asbulbasaura.com
 0.0.0.0 asccdn.com
 0.0.0.0 asce.xyz
+0.0.0.0 ascendeummedia.com
 0.0.0.0 ascensionunfinished.com
 0.0.0.0 ascentflabbysketch.com
 0.0.0.0 ascentloinconvenience.com
@@ -9552,6 +9555,7 @@
 0.0.0.0 bpt.webedia-group.com
 0.0.0.0 bptracking.com
 0.0.0.0 bpxbzps.xyz
+0.0.0.0 bpxxgkoj.icu
 0.0.0.0 bpyerxzn.xyz
 0.0.0.0 bqeuffmdobmpoe.xyz
 0.0.0.0 bqjqripb.xyz
@@ -11035,6 +11039,7 @@
 0.0.0.0 center.io
 0.0.0.0 centeredfailinghotline.com
 0.0.0.0 centeredmotorcycle.com
+0.0.0.0 centlyhavebed.com
 0.0.0.0 centralheat.me
 0.0.0.0 centralized.zaloapp.com
 0.0.0.0 centralnervous.net
@@ -13809,6 +13814,7 @@
 0.0.0.0 cypr.com
 0.0.0.0 cypresslocum.com
 0.0.0.0 cyretuf.top
+0.0.0.0 cyrociest.shop
 0.0.0.0 cysgcm.xyz
 0.0.0.0 cytomecruor.top
 0.0.0.0 cyuwkbf.top
@@ -17871,6 +17877,7 @@
 0.0.0.0 ehutzaug.life
 0.0.0.0 ei1s7b.cn
 0.0.0.0 ei7.icu
+0.0.0.0 eibzywva.com
 0.0.0.0 eidoscruster.com
 0.0.0.0 eiegkg.xyz
 0.0.0.0 eighteenderived.com
@@ -21932,6 +21939,7 @@
 0.0.0.0 gmmlmo.xyz
 0.0.0.0 gmodmp.jp
 0.0.0.0 gmossp-sp.jp
+0.0.0.0 gmso12251oka.top
 0.0.0.0 gmthhftif.com
 0.0.0.0 gmxvmvptfm.com
 0.0.0.0 gmxysb.icu
@@ -22554,6 +22562,7 @@
 0.0.0.0 gsnb048lj.com
 0.0.0.0 gsnqhdo.com
 0.0.0.0 gsp1.baidu.com
+0.0.0.0 gsrgjsmymkwt.com
 0.0.0.0 gsspat.jp
 0.0.0.0 gsspcln.jp
 0.0.0.0 gssprt.jp
@@ -24417,6 +24426,7 @@
 0.0.0.0 ibankingshopee.vn
 0.0.0.0 ibanner.de
 0.0.0.0 ibannerexchange.com
+0.0.0.0 ibbmkdooqkj.com
 0.0.0.0 ibclick.stream
 0.0.0.0 ibd-as-api.iq.com
 0.0.0.0 ibeat-analytics.com
@@ -26096,6 +26106,7 @@
 0.0.0.0 jambojar.com
 0.0.0.0 jambosmodesty.com
 0.0.0.0 jamstech.store
+0.0.0.0 janads.shop
 0.0.0.0 janemmf.com
 0.0.0.0 jangiddywashed.com
 0.0.0.0 jangleachy.com
@@ -26166,6 +26177,7 @@
 0.0.0.0 jb.dianshu119.com
 0.0.0.0 jb.ecar168.cn
 0.0.0.0 jbbyyryezqqvq.top
+0.0.0.0 jbdch1.appmobile.cn
 0.0.0.0 jbib-hxyf.icu
 0.0.0.0 jbkqemk.icu
 0.0.0.0 jblkvlyurssx.xyz
@@ -29104,6 +29116,8 @@
 0.0.0.0 log.saigondautu.com.vn
 0.0.0.0 log.seekda.com
 0.0.0.0 log.sggp.org.vn
+0.0.0.0 log.shortbread.analytics.console.aws.a2z.com
+0.0.0.0 log.shortbread.aws.dev
 0.0.0.0 log.shufoo.net
 0.0.0.0 log.sina.cn
 0.0.0.0 log.smoney.vn
@@ -31176,6 +31190,7 @@
 0.0.0.0 minently.com
 0.0.0.0 miner-linkperfectmoney.com
 0.0.0.0 mineraltip.com
+0.0.0.0 minerva.devices.a2z.com
 0.0.0.0 minewhat.com
 0.0.0.0 mingleabstainsuccessor.com
 0.0.0.0 mingledcommit.com
@@ -31520,6 +31535,7 @@
 0.0.0.0 mobile-events.eservice.emarsys.net
 0.0.0.0 mobile-facebook.com.vn
 0.0.0.0 mobile-ibankingshopee.vn
+0.0.0.0 mobile-production.content-square.net
 0.0.0.0 mobile.slgnt.eu
 0.0.0.0 mobile333.com
 0.0.0.0 mobilead.vn
@@ -38073,6 +38089,7 @@
 0.0.0.0 protectonlinenow.com
 0.0.0.0 protectorincorporatehush.com
 0.0.0.0 protectsubrev.com
+0.0.0.0 protectwborcn.com
 0.0.0.0 protectyourdevices.com
 0.0.0.0 proteinfrivolousfertilised.com
 0.0.0.0 proteininnovationpioneer.com
@@ -38780,6 +38797,7 @@
 0.0.0.0 pzqfmhy.com
 0.0.0.0 pztezl.xyz
 0.0.0.0 pzvai.site
+0.0.0.0 pzzedx.icu
 0.0.0.0 q*-publick.club
 0.0.0.0 q-counter.com
 0.0.0.0 q-stats.nl
@@ -39438,6 +39456,7 @@
 0.0.0.0 r2b2.io
 0.0.0.0 r2d2.aotter.net
 0.0.0.0 r451.jamanetwork.com
+0.0.0.0 r4u.icu
 0.0.0.0 r528e.cn
 0.0.0.0 r541.houstonchronicle.com
 0.0.0.0 r566.timescall.com
@@ -41424,6 +41443,7 @@
 0.0.0.0 s.news.naver.com
 0.0.0.0 s.newsportalssl1.top
 0.0.0.0 s.ntv.io
+0.0.0.0 s.pie.org
 0.0.0.0 s.pixsrvcs.com
 0.0.0.0 s.remonti.org
 0.0.0.0 s.sdx.ru
@@ -41467,6 +41487,7 @@
 0.0.0.0 s2s.adjust.com
 0.0.0.0 s2sterra.com
 0.0.0.0 s3-analytics-events.easybrain.com
+0.0.0.0 s3-iad-ww.cf.videorolls.row.aiv-cdn.net
 0.0.0.0 s3.smartphonehoesjes.nl
 0.0.0.0 s3.ttpsdk.info
 0.0.0.0 s324.wcexaminer.com
@@ -42207,6 +42228,7 @@
 0.0.0.0 sehtjv.com
 0.0.0.0 seibertspart.com
 0.0.0.0 seichesditali.click
+0.0.0.0 seishinyoga.com
 0.0.0.0 seitenaufruf.com
 0.0.0.0 seitentipp.com
 0.0.0.0 seitwert.de
@@ -42332,6 +42354,7 @@
 0.0.0.0 sentry.outbid.io
 0.0.0.0 sentry.querastaff.ir
 0.0.0.0 sentry.virgool.io
+0.0.0.0 sentry.yektanet.tech
 0.0.0.0 sentry01.zerg.rambler.ru
 0.0.0.0 seo-master.net
 0.0.0.0 seo-overview.com
@@ -42419,6 +42442,7 @@
 0.0.0.0 servemeads.com
 0.0.0.0 servemoney.ru
 0.0.0.0 servenobid.com
+0.0.0.0 server.megabrain.co
 0.0.0.0 server.zmedia.vn
 0.0.0.0 server.zombie-tv.org
 0.0.0.0 server4ads.com
@@ -43915,6 +43939,7 @@
 0.0.0.0 smigdxy.com
 0.0.0.0 smigid.ru
 0.0.0.0 smigro.info
+0.0.0.0 smileesidesuk.com
 0.0.0.0 smileoffennec.com
 0.0.0.0 smilered.com
 0.0.0.0 smilesalesmanhorrified.com
@@ -45381,7 +45406,6 @@
 0.0.0.0 stattrax.com
 0.0.0.0 statun.com
 0.0.0.0 statuncore.com
-0.0.0.0 status.techtarget.itmedia.co.jp
 0.0.0.0 statwup.huya.com
 0.0.0.0 statwup.nimo.tv
 0.0.0.0 statystyki.panelek.com
@@ -46404,6 +46428,7 @@
 0.0.0.0 t.my.jobs
 0.0.0.0 t.n.mcdonalds.de
 0.0.0.0 t.ofsys.com
+0.0.0.0 t.pie.org
 0.0.0.0 t.pointandplace.com
 0.0.0.0 t.poki.io
 0.0.0.0 t.powerreviews.com
@@ -50055,6 +50080,7 @@
 0.0.0.0 twiago.com
 0.0.0.0 twigwisp.com
 0.0.0.0 twilightsuburbmill.com
+0.0.0.0 twilmii.top
 0.0.0.0 twin-iq.kickfire.com
 0.0.0.0 twinadsrv.com
 0.0.0.0 twinboutjuly.com
@@ -51172,6 +51198,7 @@
 0.0.0.0 uweriot.top
 0.0.0.0 uwerpyh.cn
 0.0.0.0 uwfcqtdb.xyz
+0.0.0.0 uwilmit.top
 0.0.0.0 uwjhzeb.com
 0.0.0.0 uwlzsfo.com
 0.0.0.0 uwmlmhcjmjvuqy.xyz
@@ -53514,7 +53541,6 @@
 0.0.0.0 weborama.fr
 0.0.0.0 webpinp.com
 0.0.0.0 webpixel.smartmeapp.com
-0.0.0.0 webpower.eu
 0.0.0.0 webprospector.de
 0.0.0.0 webpush.vn
 0.0.0.0 webpushcloud.info
@@ -55960,6 +55986,7 @@
 0.0.0.0 zeddjv.xyz
 0.0.0.0 zedo.com
 0.0.0.0 zeebestmarketing.com
+0.0.0.0 zeecajichaiw.net
 0.0.0.0 zeechoog.net
 0.0.0.0 zeechumy.com
 0.0.0.0 zeeduketa.net
