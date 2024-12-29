@@ -1,6 +1,6 @@
-# Generated at: 2024-12-28 00:55:13
+# Generated at: 2024-12-29 01:01:39
 # Source: https://adguardteam.github.io/AdGuardSDNSFilter/Filters/filter.txt
-# Total domains: 56476
+# Total domains: 56498
 
 0.0.0.0 0.code.cotsta.ru
 0.0.0.0 0.myikas.com
@@ -1180,6 +1180,7 @@
 0.0.0.0 6631f33cf2a1032b.com
 0.0.0.0 665166e5a9.com
 0.0.0.0 6651tp.com
+0.0.0.0 6657e4f5c2.com
 0.0.0.0 666579.xyz
 0.0.0.0 6669667.com
 0.0.0.0 666aa777bb.com
@@ -1468,6 +1469,7 @@
 0.0.0.0 8cc5ff581a88.bitsngo.net
 0.0.0.0 8chuyenphongthe.com
 0.0.0.0 8coins.net
+0.0.0.0 8cp.icu
 0.0.0.0 8d96fe2f01.com
 0.0.0.0 8db4fde90b.com
 0.0.0.0 8de5d7e235.com
@@ -8198,6 +8200,7 @@
 0.0.0.0 bdzdd2-sdd53-vxc.com
 0.0.0.0 be-frioaj.love
 0.0.0.0 be30660063.com
+0.0.0.0 be51586160.com
 0.0.0.0 bea-s.dinghuoche.com
 0.0.0.0 bea988787c.com
 0.0.0.0 beachanatomyheroin.com
@@ -10726,6 +10729,7 @@
 0.0.0.0 cchbdata.net
 0.0.0.0 cchdbond.com
 0.0.0.0 ccjzuavqrh.com
+0.0.0.0 cclimif.top
 0.0.0.0 ccmiocw.com
 0.0.0.0 ccn08sth.de
 0.0.0.0 ccnnetwork.co
@@ -19454,6 +19458,7 @@
 0.0.0.0 fcccredit.com
 0.0.0.0 fccinteractive.com
 0.0.0.0 fccomvn.com
+0.0.0.0 fceedf7652.com
 0.0.0.0 fcepahafyq.com
 0.0.0.0 fckmedate.com
 0.0.0.0 fclog.baidu.com
@@ -23128,6 +23133,7 @@
 0.0.0.0 hcgbhq.com
 0.0.0.0 hciaicdbiahibedhae.world
 0.0.0.0 hciwyv.icu
+0.0.0.0 hclimiu.top
 0.0.0.0 hcpvkcznxj.com
 0.0.0.0 hcvjvmunax.com
 0.0.0.0 hcyhiadxay.com
@@ -23307,6 +23313,7 @@
 0.0.0.0 hellominimshanging.com
 0.0.0.0 hellosherpa.com
 0.0.0.0 helltraffic.com
+0.0.0.0 helmethomicidal.com
 0.0.0.0 helmetregent.com
 0.0.0.0 helmfireworkssauce.com
 0.0.0.0 helmingcensers.shop
@@ -24010,6 +24017,7 @@
 0.0.0.0 hotrovayvoneximbak.com
 0.0.0.0 hotroviet999.com
 0.0.0.0 hotsocials.com
+0.0.0.0 hottedholster.com
 0.0.0.0 hottercensorbeaker.com
 0.0.0.0 hottesvideosapps.com
 0.0.0.0 hottopnow.com
@@ -24569,6 +24577,7 @@
 0.0.0.0 iecmca.xyz
 0.0.0.0 ielmzzm.com
 0.0.0.0 ieluqiqttdwv.com
+0.0.0.0 iemhotqk.com
 0.0.0.0 iemiq.com
 0.0.0.0 ieo8qjp3x9jn.pro
 0.0.0.0 ieryt111.fun
@@ -26204,6 +26213,7 @@
 0.0.0.0 jbm6c54upkui.com
 0.0.0.0 jbrlsr.com
 0.0.0.0 jbtul.com
+0.0.0.0 jbvoejzamqjzl.top
 0.0.0.0 jbwiujl.com
 0.0.0.0 jbzmwqmqwowaz.top
 0.0.0.0 jc1.dayfund.com.cn
@@ -32281,6 +32291,7 @@
 0.0.0.0 muriheem.net
 0.0.0.0 murkybrashly.com
 0.0.0.0 murkymouse.online
+0.0.0.0 murolwsi.com
 0.0.0.0 murqyi.com
 0.0.0.0 musclesadmonishment.com
 0.0.0.0 musclesprefacelie.com
@@ -39635,6 +39646,7 @@
 0.0.0.0 raphidewakener.com
 0.0.0.0 rapidads.de
 0.0.0.0 rapidcounter.com
+0.0.0.0 rapidfoxengine.com
 0.0.0.0 rapidhits.net
 0.0.0.0 rapidhunchback.com
 0.0.0.0 rapidlypierredictum.com
@@ -40204,6 +40216,7 @@
 0.0.0.0 relevanceads.com
 0.0.0.0 relevant-digital.com
 0.0.0.0 relevanti.com
+0.0.0.0 relgrads.com
 0.0.0.0 reliablebanners.com
 0.0.0.0 reliableceaseswat.com
 0.0.0.0 reliablecounter.com
@@ -41385,6 +41398,7 @@
 0.0.0.0 rvrpushserv.com
 0.0.0.0 rvtfwryz.icu
 0.0.0.0 rvvmynjd.love
+0.0.0.0 rvxmlj.icu
 0.0.0.0 rw.marchex.io
 0.0.0.0 rwdjrn.icu
 0.0.0.0 rwhxz.space
@@ -44033,6 +44047,7 @@
 0.0.0.0 smugismanaxon.com
 0.0.0.0 smv.to
 0.0.0.0 sn00.net
+0.0.0.0 sn9.icu
 0.0.0.0 snack-media.com
 0.0.0.0 snadsfit.com
 0.0.0.0 snagbaudhulas.com
@@ -44664,6 +44679,7 @@
 0.0.0.0 spoiledpresence.com
 0.0.0.0 spoilmagicstandard.com
 0.0.0.0 spoilphysiqueteenagers.com
+0.0.0.0 spokanchap.com
 0.0.0.0 spokesperson254.fun
 0.0.0.0 spoki-noki.net
 0.0.0.0 spolecznosci.net
@@ -44859,6 +44875,7 @@
 0.0.0.0 ssp.meba.kr
 0.0.0.0 ssp.mediation.trnox.com
 0.0.0.0 ssp.moeli.net
+0.0.0.0 ssp.rutube.ru
 0.0.0.0 ssp.seznam.cz
 0.0.0.0 ssp.zf313.com
 0.0.0.0 ssp.zryydi.com
@@ -47645,6 +47662,7 @@
 0.0.0.0 thseaeing.fun
 0.0.0.0 thshopee.com
 0.0.0.0 thudsurdardu.net
+0.0.0.0 thuekhachsan.com.vn
 0.0.0.0 thugjudgementpreparations.com
 0.0.0.0 thukimoocult.net
 0.0.0.0 thulroucmoan.net
@@ -49671,6 +49689,7 @@
 0.0.0.0 triviasms.com
 0.0.0.0 triviaworld.club
 0.0.0.0 trj.valuecommerce.com
+0.0.0.0 trjfoagf.icu
 0.0.0.0 trjs2.mediafin.be
 0.0.0.0 trjwraxkfkm.com
 0.0.0.0 trk*.vidible.tv
@@ -49886,6 +49905,7 @@
 0.0.0.0 tsarkinds.com
 0.0.0.0 tsbck.com
 0.0.0.0 tsbluebox.com
+0.0.0.0 tsbrzz.icu
 0.0.0.0 tscounter.com
 0.0.0.0 tsdfxv.xyz
 0.0.0.0 tsiwqtng8huauw30n.com
@@ -52274,6 +52294,7 @@
 0.0.0.0 viiadr.com
 0.0.0.0 viiavjpe.com
 0.0.0.0 viibest.com
+0.0.0.0 viibmmqc.com
 0.0.0.0 viicylmb.com
 0.0.0.0 viiczfvm.com
 0.0.0.0 viiddai.com
@@ -52536,6 +52557,7 @@
 0.0.0.0 vjpgm.space
 0.0.0.0 vjugz.com
 0.0.0.0 vjvj.vj24co.com
+0.0.0.0 vjzvgvgz.icu
 0.0.0.0 vk-ads.ru
 0.0.0.0 vk-analytics.ru
 0.0.0.0 vkbxaixl.icu
