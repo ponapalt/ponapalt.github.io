@@ -98,6 +98,10 @@ title: ラーシェ
 - 天気予報は [wttr.in](https://wttr.in/) から教えてもらってる
 - 今日は何の日かは [この素敵なAPI](https://note.com/sooz/n/naffb68c7f53b) を使わせてもらってるんだ 
 
+## 支援窓口
+
+- 気に入ったら [FANBOX](https://ponapalt.fanbox.cc/) で支援してね！ 
+
 ## 作ってくれた人
 
 - [ばぐとら研](https://ssp.shillest.net/) 第一研究部の [@ponapalt](https://ukadon.shillest.net/@ponapalt) さん
