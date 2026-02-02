@@ -1,0 +1,976 @@
+---
+layout: post
+title: PNG Analyzer
+---
+
+<nav>
+    <a href="analyzer-gif.html">GIF</a> |
+    <strong>PNG</strong> |
+    <a href="analyzer-webp.html">WebP</a>
+</nav>
+
+<style>
+    .drop-zone {
+        border: 2px dashed #999;
+        padding: 40px;
+        text-align: center;
+        margin: 20px auto;
+        max-width: 600px;
+        cursor: pointer;
+    }
+    .drop-zone:hover, .drop-zone.dragover {
+        border-color: #333;
+        background: #f5f5f5;
+    }
+    .drop-zone p {
+        color: #666;
+    }
+    #fileInput {
+        display: none;
+    }
+    .results {
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+    .section {
+        border: 1px solid #ddd;
+        padding: 20px;
+        margin: 20px 0;
+    }
+    .section h2 {
+        border-bottom: 1px solid #ddd;
+        padding-bottom: 10px;
+        margin-bottom: 15px;
+    }
+    .section h3 {
+        margin: 15px 0 10px 0;
+    }
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        gap: 10px;
+    }
+    .info-item {
+        background: #f9f9f9;
+        padding: 10px;
+        border: 1px solid #eee;
+    }
+    .info-item label {
+        color: #666;
+        font-size: 0.85em;
+        display: block;
+        margin-bottom: 4px;
+    }
+    .info-item .value {
+        font-weight: bold;
+        font-family: monospace;
+    }
+    .chunks-list {
+        margin-top: 10px;
+    }
+    .chunk-item {
+        border: 1px solid #ddd;
+        padding: 12px;
+        margin: 10px 0;
+    }
+    .chunk-item.critical {
+        border-left: 3px solid #666;
+    }
+    .chunk-item h4 {
+        margin-bottom: 8px;
+    }
+    .frames-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+        gap: 15px;
+        margin-top: 15px;
+    }
+    .frame-card {
+        background: #f9f9f9;
+        padding: 15px;
+        border: 1px solid #ddd;
+    }
+    .frame-card h4 {
+        margin-bottom: 10px;
+    }
+    .frame-preview {
+        display: flex;
+        gap: 15px;
+        align-items: flex-start;
+    }
+    .frame-canvas {
+        border: 1px solid #ccc;
+        background: repeating-conic-gradient(#ddd 0% 25%, #fff 0% 50%) 50% / 10px 10px;
+        max-width: 200px;
+        max-height: 200px;
+    }
+    .frame-info {
+        flex: 1;
+        font-size: 0.9em;
+    }
+    .frame-info div {
+        margin: 4px 0;
+        padding: 4px;
+        background: #f0f0f0;
+    }
+    .frame-info span.label {
+        color: #666;
+    }
+    .frame-info span.val {
+        font-family: monospace;
+    }
+    .hex-dump {
+        font-family: monospace;
+        font-size: 12px;
+        background: #f5f5f5;
+        padding: 15px;
+        border: 1px solid #ddd;
+        overflow-x: auto;
+        max-height: 200px;
+        overflow-y: auto;
+        white-space: pre;
+    }
+    .preview-section {
+        text-align: center;
+        padding: 20px;
+    }
+    #previewCanvas, #staticPreview {
+        border: 1px solid #ccc;
+        background: repeating-conic-gradient(#ddd 0% 25%, #fff 0% 50%) 50% / 10px 10px;
+        max-width: 100%;
+    }
+    .animation-controls {
+        margin-top: 15px;
+    }
+    .animation-controls button {
+        background: #fff;
+        border: 1px solid #999;
+        padding: 8px 20px;
+        cursor: pointer;
+        font-weight: bold;
+        margin: 0 4px;
+    }
+    .animation-controls button:hover {
+        background: #f0f0f0;
+    }
+    .raw-data {
+        margin-top: 10px;
+    }
+    .raw-data summary {
+        cursor: pointer;
+        padding: 8px;
+        background: #f5f5f5;
+        border: 1px solid #ddd;
+    }
+    .text-content {
+        background: #f9f9f9;
+        border: 1px solid #ddd;
+        padding: 10px;
+        margin-top: 10px;
+        white-space: pre-wrap;
+        font-family: monospace;
+    }
+    .loading {
+        text-align: center;
+        padding: 40px;
+        color: #666;
+    }
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+    }
+    th, td {
+        padding: 8px 12px;
+        text-align: left;
+        border-bottom: 1px solid #ddd;
+    }
+    th {
+        background: #f5f5f5;
+    }
+    td {
+        font-family: monospace;
+    }
+    .color-swatch {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        border: 1px solid #ccc;
+        vertical-align: middle;
+        margin-right: 8px;
+    }
+</style>
+
+<h1>PNG Analyzer</h1>
+
+<div class="drop-zone" id="dropZone">
+    <p>PNGファイルをここにドラッグ＆ドロップ<br>または クリックして選択</p>
+    <input type="file" id="fileInput" accept=".png,.PNG,image/png,image/PNG">
+</div>
+
+<div class="results" id="results"></div>
+
+<script>
+// PNG Parser Class
+class PNGParser {
+    constructor(buffer) {
+        this.buffer = buffer;
+        this.view = new DataView(buffer);
+        this.uint8 = new Uint8Array(buffer);
+        this.pos = 0;
+        this.chunks = [];
+        this.ihdr = null;
+        this.actl = null;
+        this.frames = [];
+        this.textChunks = [];
+        this.otherChunks = [];
+    }
+
+    readUint32() {
+        const val = this.view.getUint32(this.pos, false);
+        this.pos += 4;
+        return val;
+    }
+
+    readUint16() {
+        const val = this.view.getUint16(this.pos, false);
+        this.pos += 2;
+        return val;
+    }
+
+    readByte() {
+        return this.uint8[this.pos++];
+    }
+
+    readBytes(n) {
+        const bytes = this.uint8.slice(this.pos, this.pos + n);
+        this.pos += n;
+        return bytes;
+    }
+
+    readString(n) {
+        let str = '';
+        for (let i = 0; i < n; i++) {
+            str += String.fromCharCode(this.readByte());
+        }
+        return str;
+    }
+
+    parse() {
+        const signature = this.readBytes(8);
+        const expectedSig = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
+
+        if (!signature.every((b, i) => b === expectedSig[i])) {
+            throw new Error('Not a valid PNG file');
+        }
+
+        this.signature = signature;
+
+        let currentFctl = null;
+        let idatChunks = [];
+        let fdatChunks = [];
+
+        while (this.pos < this.buffer.byteLength) {
+            const chunkStart = this.pos;
+            const length = this.readUint32();
+            const type = this.readString(4);
+            const dataStart = this.pos;
+            const data = this.readBytes(length);
+            const crc = this.readUint32();
+
+            const chunk = {
+                type, length, data, crc,
+                offset: chunkStart,
+                isCritical: type[0] === type[0].toUpperCase(),
+                isPublic: type[1] === type[1].toUpperCase(),
+                isReserved: type[2] === type[2].toUpperCase(),
+                isSafeToCopy: type[3] === type[3].toLowerCase()
+            };
+
+            this.chunks.push(chunk);
+
+            if (type === 'IHDR') {
+                this.ihdr = this.parseIHDR(data);
+            } else if (type === 'acTL') {
+                this.actl = this.parseAcTL(data);
+            } else if (type === 'fcTL') {
+                if (currentFctl) {
+                    if (fdatChunks.length > 0) {
+                        currentFctl.dataChunks = fdatChunks;
+                        fdatChunks = [];
+                    } else if (idatChunks.length > 0) {
+                        currentFctl.dataChunks = idatChunks;
+                        currentFctl.isDefaultImage = true;
+                    }
+                    this.frames.push(currentFctl);
+                }
+                currentFctl = this.parseFcTL(data);
+            } else if (type === 'IDAT') {
+                idatChunks.push(data);
+            } else if (type === 'fdAT') {
+                fdatChunks.push(this.parseFdAT(data));
+            } else if (type === 'tEXt') {
+                this.textChunks.push(this.parseTextChunk(data));
+            } else if (type === 'iTXt') {
+                this.textChunks.push(this.parseITXtChunk(data));
+            } else if (type === 'zTXt') {
+                this.textChunks.push(this.parseZTXtChunk(data));
+            } else if (type === 'gAMA') {
+                this.gamma = this.readUint32FromData(data, 0) / 100000;
+            } else if (type === 'cHRM') {
+                this.chrm = this.parseCHRM(data);
+            } else if (type === 'sRGB') {
+                this.srgb = data[0];
+            } else if (type === 'pHYs') {
+                this.phys = this.parsePHYs(data);
+            } else if (type === 'tIME') {
+                this.time = this.parseTIME(data);
+            } else if (type === 'bKGD') {
+                this.bkgd = this.parseBKGD(data);
+            } else if (type === 'PLTE') {
+                this.palette = this.parsePLTE(data);
+            } else if (type === 'tRNS') {
+                this.trns = data;
+            } else if (type !== 'IEND') {
+                this.otherChunks.push(chunk);
+            }
+
+            if (type === 'IEND') {
+                if (currentFctl) {
+                    if (fdatChunks.length > 0) {
+                        currentFctl.dataChunks = fdatChunks;
+                    } else if (idatChunks.length > 0 && !this.frames.some(f => f.isDefaultImage)) {
+                        currentFctl.dataChunks = idatChunks;
+                        currentFctl.isDefaultImage = true;
+                    }
+                    this.frames.push(currentFctl);
+                }
+                break;
+            }
+        }
+
+        this.idatChunks = idatChunks;
+        return this;
+    }
+
+    readUint32FromData(data, offset) {
+        return (data[offset] << 24) | (data[offset + 1] << 16) | (data[offset + 2] << 8) | data[offset + 3];
+    }
+
+    readUint16FromData(data, offset) {
+        return (data[offset] << 8) | data[offset + 1];
+    }
+
+    parseIHDR(data) {
+        const colorTypes = {
+            0: 'Grayscale', 2: 'RGB', 3: 'Indexed',
+            4: 'Grayscale + Alpha', 6: 'RGBA'
+        };
+        const compressionMethods = { 0: 'Deflate' };
+        const filterMethods = { 0: 'Adaptive' };
+        const interlaceMethods = { 0: 'None', 1: 'Adam7' };
+
+        return {
+            width: this.readUint32FromData(data, 0),
+            height: this.readUint32FromData(data, 4),
+            bitDepth: data[8],
+            colorType: data[9],
+            colorTypeName: colorTypes[data[9]] || 'Unknown',
+            compressionMethod: data[10],
+            compressionMethodName: compressionMethods[data[10]] || 'Unknown',
+            filterMethod: data[11],
+            filterMethodName: filterMethods[data[11]] || 'Unknown',
+            interlaceMethod: data[12],
+            interlaceMethodName: interlaceMethods[data[12]] || 'Unknown'
+        };
+    }
+
+    parseAcTL(data) {
+        return {
+            numFrames: this.readUint32FromData(data, 0),
+            numPlays: this.readUint32FromData(data, 4)
+        };
+    }
+
+    parseFcTL(data) {
+        const disposeOps = {
+            0: 'PNG_DISPOSE_OP_NONE',
+            1: 'PNG_DISPOSE_OP_BACKGROUND',
+            2: 'PNG_DISPOSE_OP_PREVIOUS'
+        };
+        const blendOps = {
+            0: 'PNG_BLEND_OP_SOURCE',
+            1: 'PNG_BLEND_OP_OVER'
+        };
+
+        const delayNum = this.readUint16FromData(data, 20);
+        const delayDen = this.readUint16FromData(data, 22) || 100;
+
+        return {
+            sequenceNumber: this.readUint32FromData(data, 0),
+            width: this.readUint32FromData(data, 4),
+            height: this.readUint32FromData(data, 8),
+            xOffset: this.readUint32FromData(data, 12),
+            yOffset: this.readUint32FromData(data, 16),
+            delayNum, delayDen,
+            delayMs: (delayNum / delayDen) * 1000,
+            disposeOp: data[24],
+            disposeOpName: disposeOps[data[24]] || 'Unknown',
+            blendOp: data[25],
+            blendOpName: blendOps[data[25]] || 'Unknown',
+            dataChunks: [],
+            isDefaultImage: false
+        };
+    }
+
+    parseFdAT(data) {
+        return {
+            sequenceNumber: this.readUint32FromData(data, 0),
+            frameData: data.slice(4)
+        };
+    }
+
+    parseTextChunk(data) {
+        const nullIndex = data.indexOf(0);
+        const keyword = String.fromCharCode(...data.slice(0, nullIndex));
+        const text = String.fromCharCode(...data.slice(nullIndex + 1));
+        return { type: 'tEXt', keyword, text };
+    }
+
+    parseITXtChunk(data) {
+        let pos = 0;
+        let nullIndex = data.indexOf(0, pos);
+        const keyword = String.fromCharCode(...data.slice(pos, nullIndex));
+        pos = nullIndex + 1;
+
+        const compressionFlag = data[pos++];
+        const compressionMethod = data[pos++];
+
+        nullIndex = data.indexOf(0, pos);
+        const languageTag = String.fromCharCode(...data.slice(pos, nullIndex));
+        pos = nullIndex + 1;
+
+        nullIndex = data.indexOf(0, pos);
+        const translatedKeyword = String.fromCharCode(...data.slice(pos, nullIndex));
+        pos = nullIndex + 1;
+
+        let text;
+        if (compressionFlag) {
+            text = '[Compressed iTXt data]';
+        } else {
+            try {
+                text = new TextDecoder('utf-8').decode(data.slice(pos));
+            } catch {
+                text = String.fromCharCode(...data.slice(pos));
+            }
+        }
+
+        return { type: 'iTXt', keyword, languageTag, translatedKeyword, text, compressed: compressionFlag };
+    }
+
+    parseZTXtChunk(data) {
+        const nullIndex = data.indexOf(0);
+        const keyword = String.fromCharCode(...data.slice(0, nullIndex));
+        const compressionMethod = data[nullIndex + 1];
+        return { type: 'zTXt', keyword, compressionMethod, text: '[Compressed zTXt data]' };
+    }
+
+    parseCHRM(data) {
+        return {
+            whitePointX: this.readUint32FromData(data, 0) / 100000,
+            whitePointY: this.readUint32FromData(data, 4) / 100000,
+            redX: this.readUint32FromData(data, 8) / 100000,
+            redY: this.readUint32FromData(data, 12) / 100000,
+            greenX: this.readUint32FromData(data, 16) / 100000,
+            greenY: this.readUint32FromData(data, 20) / 100000,
+            blueX: this.readUint32FromData(data, 24) / 100000,
+            blueY: this.readUint32FromData(data, 28) / 100000
+        };
+    }
+
+    parsePHYs(data) {
+        const unit = data[8];
+        return {
+            pixelsPerUnitX: this.readUint32FromData(data, 0),
+            pixelsPerUnitY: this.readUint32FromData(data, 4),
+            unit: unit,
+            unitName: unit === 1 ? 'Meter' : 'Unknown'
+        };
+    }
+
+    parseTIME(data) {
+        return {
+            year: this.readUint16FromData(data, 0),
+            month: data[2], day: data[3],
+            hour: data[4], minute: data[5], second: data[6]
+        };
+    }
+
+    parseBKGD(data) {
+        if (this.ihdr.colorType === 3) {
+            return { paletteIndex: data[0] };
+        } else if (this.ihdr.colorType === 0 || this.ihdr.colorType === 4) {
+            return { gray: this.readUint16FromData(data, 0) };
+        } else {
+            return {
+                red: this.readUint16FromData(data, 0),
+                green: this.readUint16FromData(data, 2),
+                blue: this.readUint16FromData(data, 4)
+            };
+        }
+    }
+
+    parsePLTE(data) {
+        const colors = [];
+        for (let i = 0; i < data.length; i += 3) {
+            colors.push({
+                r: data[i], g: data[i + 1], b: data[i + 2],
+                index: colors.length
+            });
+        }
+        return colors;
+    }
+
+    isAPNG() {
+        return this.actl !== null;
+    }
+}
+
+// UI
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+const results = document.getElementById('results');
+
+dropZone.addEventListener('click', () => fileInput.click());
+dropZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropZone.classList.add('dragover');
+});
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+    const file = e.dataTransfer.files[0];
+    if (file) processFile(file);
+});
+fileInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (file) processFile(file);
+});
+
+let PNGData = null;
+let animationFrames = [];
+
+function processFile(file) {
+    results.innerHTML = '<div class="loading">解析中...</div>';
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+        try {
+            const parser = new PNGParser(e.target.result);
+            const png = parser.parse();
+            await displayResults(png, file, e.target.result);
+        } catch (err) {
+            results.innerHTML = `<div class="section"><h2>エラー</h2><p>${err.message}</p></div>`;
+            console.error(err);
+        }
+    };
+    reader.readAsArrayBuffer(file);
+}
+
+async function displayResults(png, file, arrayBuffer) {
+    const isAnimated = png.isAPNG();
+    let html = '';
+
+    // File Info
+    html += `
+    <div class="section">
+        <h2>ファイル情報</h2>
+        <div class="info-grid">
+            <div class="info-item">
+                <label>ファイル名</label>
+                <div class="value">${file.name}</div>
+            </div>
+            <div class="info-item">
+                <label>ファイルサイズ</label>
+                <div class="value">${formatBytes(file.size)}</div>
+            </div>
+            <div class="info-item">
+                <label>フォーマット</label>
+                <div class="value">${isAnimated ? 'APNG (Animated PNG)' : 'PNG (静止画)'}</div>
+            </div>
+            <div class="info-item">
+                <label>最終更新日</label>
+                <div class="value">${new Date(file.lastModified).toLocaleString()}</div>
+            </div>
+        </div>
+    </div>`;
+
+    // PNG Signature
+    html += `
+    <div class="section">
+        <h2>PNGシグネチャ</h2>
+        <div class="info-grid">
+            <div class="info-item">
+                <label>シグネチャ (8 bytes)</label>
+                <div class="value">${Array.from(png.signature).map(b => '0x' + b.toString(16).toUpperCase().padStart(2, '0')).join(' ')}</div>
+            </div>
+        </div>
+    </div>`;
+
+    // IHDR
+    const ihdr = png.ihdr;
+    html += `
+    <div class="section">
+        <h2>画像ヘッダー (IHDR)</h2>
+        <div class="info-grid">
+            <div class="info-item">
+                <label>画像サイズ</label>
+                <div class="value">${ihdr.width} x ${ihdr.height} px</div>
+            </div>
+            <div class="info-item">
+                <label>ビット深度</label>
+                <div class="value">${ihdr.bitDepth} bits</div>
+            </div>
+            <div class="info-item">
+                <label>カラータイプ</label>
+                <div class="value">${ihdr.colorType} - ${ihdr.colorTypeName}</div>
+            </div>
+            <div class="info-item">
+                <label>圧縮方式</label>
+                <div class="value">${ihdr.compressionMethod} - ${ihdr.compressionMethodName}</div>
+            </div>
+            <div class="info-item">
+                <label>フィルター方式</label>
+                <div class="value">${ihdr.filterMethod} - ${ihdr.filterMethodName}</div>
+            </div>
+            <div class="info-item">
+                <label>インターレース</label>
+                <div class="value">${ihdr.interlaceMethod} - ${ihdr.interlaceMethodName}</div>
+            </div>
+        </div>
+    </div>`;
+
+    // Image Preview (static) or Animation Control (APNG)
+    html += `
+    <div class="section">
+        <h2>${isAnimated ? 'アニメーション制御 (acTL)' : '画像プレビュー'}</h2>`;
+
+    if (isAnimated) {
+        html += `
+        <div class="info-grid">
+            <div class="info-item">
+                <label>フレーム数</label>
+                <div class="value">${png.actl.numFrames}</div>
+            </div>
+            <div class="info-item">
+                <label>再生回数</label>
+                <div class="value">${png.actl.numPlays === 0 ? '無限ループ' : png.actl.numPlays + '回'}</div>
+            </div>
+            <div class="info-item">
+                <label>合計再生時間</label>
+                <div class="value">${calculateTotalDuration(png.frames).toFixed(2)} ms</div>
+            </div>
+            <div class="info-item">
+                <label>平均フレームレート</label>
+                <div class="value">${calculateFPS(png.frames).toFixed(2)} FPS</div>
+            </div>
+        </div>
+
+        <div class="preview-section">
+            <canvas id="previewCanvas" width="${ihdr.width}" height="${ihdr.height}"></canvas>
+            <div class="animation-controls">
+                <button onclick="playAnimation()">&#9654; 再生</button>
+                <button onclick="pauseAnimation()">&#9646;&#9646; 停止</button>
+                <button onclick="stepFrame(-1)">&#9664; 前</button>
+                <button onclick="stepFrame(1)">&#9654; 次</button>
+            </div>
+            <div id="frameCounter" style="margin-top:10px;color:#666;">フレーム: 0 / ${png.frames.length}</div>
+        </div>`;
+    } else {
+        html += `
+        <div class="preview-section">
+            <img id="staticPreview" alt="PNG Preview">
+        </div>`;
+    }
+
+    html += `</div>`;
+
+    // Palette
+    if (png.palette) {
+        html += `
+        <div class="section">
+            <h2>パレット (PLTE) - ${png.palette.length}色</h2>
+            <div style="display:flex;flex-wrap:wrap;gap:2px;padding:10px;background:#f9f9f9;border:1px solid #eee;max-height:200px;overflow-y:auto;">
+                ${png.palette.map((c, i) =>
+                    `<div class="color-swatch" style="width:20px;height:20px;background:rgb(${c.r},${c.g},${c.b});cursor:pointer;" title="#${i}: RGB(${c.r},${c.g},${c.b})"></div>`
+                ).join('')}
+            </div>
+        </div>`;
+    }
+
+    // Other metadata chunks
+    let metadataHtml = '';
+
+    if (png.gamma !== undefined) {
+        metadataHtml += `
+        <div class="info-item">
+            <label>ガンマ (gAMA)</label>
+            <div class="value">${png.gamma.toFixed(5)}</div>
+        </div>`;
+    }
+
+    if (png.srgb !== undefined) {
+        const intents = ['Perceptual', 'Relative colorimetric', 'Saturation', 'Absolute colorimetric'];
+        metadataHtml += `
+        <div class="info-item">
+            <label>sRGB レンダリングインテント</label>
+            <div class="value">${png.srgb} - ${intents[png.srgb] || 'Unknown'}</div>
+        </div>`;
+    }
+
+    if (png.phys) {
+        metadataHtml += `
+        <div class="info-item">
+            <label>物理ピクセルサイズ (pHYs)</label>
+            <div class="value">${png.phys.pixelsPerUnitX} x ${png.phys.pixelsPerUnitY} /${png.phys.unitName}</div>
+        </div>`;
+    }
+
+    if (png.time) {
+        metadataHtml += `
+        <div class="info-item">
+            <label>最終更新日時 (tIME)</label>
+            <div class="value">${png.time.year}/${png.time.month}/${png.time.day} ${png.time.hour}:${String(png.time.minute).padStart(2,'0')}:${String(png.time.second).padStart(2,'0')}</div>
+        </div>`;
+    }
+
+    if (png.bkgd) {
+        let bgStr;
+        if (png.bkgd.paletteIndex !== undefined) {
+            bgStr = `パレットインデックス: ${png.bkgd.paletteIndex}`;
+        } else if (png.bkgd.gray !== undefined) {
+            bgStr = `Gray: ${png.bkgd.gray}`;
+        } else {
+            bgStr = `RGB(${png.bkgd.red}, ${png.bkgd.green}, ${png.bkgd.blue})`;
+        }
+        metadataHtml += `
+        <div class="info-item">
+            <label>背景色 (bKGD)</label>
+            <div class="value">${bgStr}</div>
+        </div>`;
+    }
+
+    if (png.chrm) {
+        metadataHtml += `
+        <div class="info-item">
+            <label>色度 (cHRM)</label>
+            <div class="value">White(${png.chrm.whitePointX.toFixed(4)}, ${png.chrm.whitePointY.toFixed(4)})</div>
+        </div>`;
+    }
+
+    if (metadataHtml) {
+        html += `
+        <div class="section">
+            <h2>メタデータ</h2>
+            <div class="info-grid">${metadataHtml}</div>
+        </div>`;
+    }
+
+    // Text chunks
+    if (png.textChunks.length > 0) {
+        html += `
+        <div class="section">
+            <h2>テキストチャンク</h2>
+            <div class="chunks-list">
+                ${png.textChunks.map((tc, i) => `
+                <div class="chunk-item">
+                    <h4>${tc.type} - ${tc.keyword}</h4>
+                    ${tc.languageTag ? `<div><span style="color:#666">言語:</span> ${tc.languageTag || 'なし'}</div>` : ''}
+                    <div class="text-content">${escapeHtml(tc.text)}</div>
+                </div>`).join('')}
+            </div>
+        </div>`;
+    }
+
+    // All Chunks Summary
+    html += `
+    <div class="section">
+        <h2>チャンク一覧 (${png.chunks.length}個)</h2>
+        <table>
+            <tr>
+                <th>オフセット</th>
+                <th>タイプ</th>
+                <th>サイズ</th>
+                <th>CRC</th>
+                <th>属性</th>
+            </tr>
+            ${png.chunks.map(c => `
+            <tr>
+                <td>0x${c.offset.toString(16).toUpperCase()}</td>
+                <td>${c.type}</td>
+                <td>${formatBytes(c.length)}</td>
+                <td>0x${c.crc.toString(16).toUpperCase().padStart(8, '0')}</td>
+                <td>${c.isCritical ? '必須' : '補助'} | ${c.isPublic ? '公開' : '私的'} | ${c.isSafeToCopy ? 'コピー可' : 'コピー不可'}</td>
+            </tr>`).join('')}
+        </table>
+    </div>`;
+
+    // Frame Details
+    if (png.frames.length > 0) {
+        html += `
+        <div class="section">
+            <h2>フレーム詳細</h2>
+            <div class="frames-container" id="framesContainer"></div>
+        </div>`;
+    }
+
+    results.innerHTML = html;
+
+    // Show static preview for non-animated PNG
+    if (!isAnimated) {
+        const blob = new Blob([arrayBuffer], { type: 'image/png' });
+        const url = URL.createObjectURL(blob);
+        const previewEl = document.getElementById('staticPreview');
+        if (previewEl) {
+            previewEl.src = url;
+        }
+    }
+
+    // Render frames for APNG
+    if (isAnimated) {
+        await renderAPNGFrames(png, file, arrayBuffer);
+    }
+}
+
+async function renderAPNGFrames(png, file, arrayBuffer) {
+    const container = document.getElementById('framesContainer');
+    PNGData = png;
+    animationFrames = [];
+
+    const blob = new Blob([arrayBuffer], { type: 'image/png' });
+    const url = URL.createObjectURL(blob);
+
+    const img = new Image();
+    img.src = url;
+
+    await new Promise(resolve => {
+        img.onload = resolve;
+        img.onerror = resolve;
+    });
+
+    png.frames.forEach((frame, index) => {
+        const frameDiv = document.createElement('div');
+        frameDiv.className = 'frame-card';
+
+        const totalDataSize = frame.dataChunks.reduce((sum, chunk) => {
+            return sum + (chunk.frameData ? chunk.frameData.length : chunk.length);
+        }, 0);
+
+        frameDiv.innerHTML = `
+            <h4>Frame #${index + 1} (seq: ${frame.sequenceNumber})</h4>
+            <div class="frame-info">
+                <div><span class="label">サイズ:</span> <span class="val">${frame.width} x ${frame.height} px</span></div>
+                <div><span class="label">オフセット:</span> <span class="val">(${frame.xOffset}, ${frame.yOffset})</span></div>
+                <div><span class="label">待ち時間:</span> <span class="val">${frame.delayNum}/${frame.delayDen} = ${frame.delayMs.toFixed(2)} ms</span></div>
+                <div><span class="label">Dispose:</span> <span class="val">${frame.disposeOp} - ${frame.disposeOpName}</span></div>
+                <div><span class="label">Blend:</span> <span class="val">${frame.blendOp} - ${frame.blendOpName}</span></div>
+                <div><span class="label">データチャンク数:</span> <span class="val">${frame.dataChunks.length}</span></div>
+                <div><span class="label">データサイズ:</span> <span class="val">${formatBytes(totalDataSize)}</span></div>
+                <div><span class="label">デフォルト画像:</span> <span class="val">${frame.isDefaultImage ? 'Yes' : 'No'}</span></div>
+            </div>
+        `;
+
+        container.appendChild(frameDiv);
+
+        animationFrames.push({ ...frame, img: img });
+    });
+
+    setupAPNGAnimation(url, png);
+}
+
+let animationId = null;
+let currentFrame = 0;
+let previewImg = null;
+
+async function setupAPNGAnimation(url, png) {
+    const canvas = document.getElementById('previewCanvas');
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+
+    previewImg = new Image();
+    previewImg.src = url;
+
+    previewImg.onload = () => {
+        ctx.drawImage(previewImg, 0, 0);
+        updateFrameCounter(1);
+    };
+}
+
+function updateFrameCounter(frame) {
+    const counter = document.getElementById('frameCounter');
+    if (counter && PNGData) {
+        counter.textContent = `フレーム: ${frame} / ${PNGData.frames.length}`;
+    }
+}
+
+function playAnimation() {
+    const canvas = document.getElementById('previewCanvas');
+    if (!canvas || !previewImg) return;
+
+    if (animationId) return;
+
+    let frameIndex = 0;
+    function animate() {
+        if (!PNGData || PNGData.frames.length === 0) return;
+
+        const frame = PNGData.frames[frameIndex];
+        updateFrameCounter(frameIndex + 1);
+
+        const delay = frame.delayMs || 100;
+        animationId = setTimeout(() => {
+            frameIndex = (frameIndex + 1) % PNGData.frames.length;
+            animate();
+        }, delay);
+    }
+    animate();
+}
+
+function pauseAnimation() {
+    if (animationId) {
+        clearTimeout(animationId);
+        animationId = null;
+    }
+}
+
+function stepFrame(delta) {
+    pauseAnimation();
+    if (!PNGData) return;
+    currentFrame = (currentFrame + delta + PNGData.frames.length) % PNGData.frames.length;
+    updateFrameCounter(currentFrame + 1);
+}
+
+// Utility functions
+function formatBytes(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(2) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function calculateTotalDuration(frames) {
+    return frames.reduce((sum, f) => sum + (f.delayMs || 100), 0);
+}
+
+function calculateFPS(frames) {
+    const totalMs = calculateTotalDuration(frames);
+    if (totalMs === 0) return 0;
+    return (frames.length / totalMs) * 1000;
+}
+</script>

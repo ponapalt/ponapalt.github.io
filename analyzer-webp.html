@@ -1,0 +1,994 @@
+---
+layout: post
+title: WebP Analyzer
+---
+
+<nav>
+    <a href="analyzer-gif.html">GIF</a> |
+    <a href="analyzer-png.html">PNG</a> |
+    <strong>WebP</strong>
+</nav>
+
+<style>
+    .drop-zone {
+        border: 2px dashed #999;
+        padding: 40px;
+        text-align: center;
+        margin: 20px auto;
+        max-width: 600px;
+        cursor: pointer;
+    }
+    .drop-zone:hover, .drop-zone.dragover {
+        border-color: #333;
+        background: #f5f5f5;
+    }
+    .drop-zone p {
+        color: #666;
+    }
+    #fileInput {
+        display: none;
+    }
+    .results {
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+    .section {
+        border: 1px solid #ddd;
+        padding: 20px;
+        margin: 20px 0;
+    }
+    .section h2 {
+        border-bottom: 1px solid #ddd;
+        padding-bottom: 10px;
+        margin-bottom: 15px;
+    }
+    .section h3 {
+        margin: 15px 0 10px 0;
+    }
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 10px;
+    }
+    .info-item {
+        background: #f9f9f9;
+        padding: 10px;
+        border: 1px solid #eee;
+    }
+    .info-item label {
+        color: #666;
+        font-size: 0.85em;
+        display: block;
+        margin-bottom: 4px;
+    }
+    .info-item .value {
+        font-weight: bold;
+        font-family: monospace;
+    }
+    .chunk-item {
+        border: 1px solid #ddd;
+        padding: 12px;
+        margin: 10px 0;
+    }
+    .chunk-item h4 {
+        margin-bottom: 8px;
+    }
+    .frames-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+        gap: 15px;
+        margin-top: 15px;
+    }
+    .frame-card {
+        background: #f9f9f9;
+        padding: 15px;
+        border: 1px solid #ddd;
+    }
+    .frame-card h4 {
+        margin-bottom: 10px;
+    }
+    .frame-info {
+        font-size: 0.9em;
+    }
+    .frame-info div {
+        margin: 4px 0;
+        padding: 4px;
+        background: #f0f0f0;
+    }
+    .frame-info span.label {
+        color: #666;
+    }
+    .frame-info span.val {
+        font-family: monospace;
+    }
+    .hex-dump {
+        font-family: monospace;
+        font-size: 12px;
+        background: #f5f5f5;
+        padding: 15px;
+        border: 1px solid #ddd;
+        overflow-x: auto;
+        max-height: 200px;
+        overflow-y: auto;
+        white-space: pre;
+    }
+    .preview-section {
+        text-align: center;
+        padding: 20px;
+    }
+    #previewCanvas, #staticPreview {
+        border: 1px solid #ccc;
+        background: repeating-conic-gradient(#ddd 0% 25%, #fff 0% 50%) 50% / 10px 10px;
+        max-width: 100%;
+    }
+    .animation-controls {
+        margin-top: 15px;
+    }
+    .animation-controls button {
+        background: #fff;
+        border: 1px solid #999;
+        padding: 8px 20px;
+        cursor: pointer;
+        font-weight: bold;
+        margin: 0 4px;
+    }
+    .animation-controls button:hover {
+        background: #f0f0f0;
+    }
+    .raw-data {
+        margin-top: 10px;
+    }
+    .raw-data summary {
+        cursor: pointer;
+        padding: 8px;
+        background: #f5f5f5;
+        border: 1px solid #ddd;
+    }
+    .loading {
+        text-align: center;
+        padding: 40px;
+        color: #666;
+    }
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+    }
+    th, td {
+        padding: 8px 12px;
+        text-align: left;
+        border-bottom: 1px solid #ddd;
+    }
+    th {
+        background: #f5f5f5;
+    }
+    td {
+        font-family: monospace;
+    }
+    .feature-flags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 10px;
+    }
+    .flag {
+        padding: 4px 10px;
+        font-size: 0.85em;
+    }
+    .flag.enabled {
+        background: #f0f0f0;
+        border: 1px solid #999;
+    }
+    .flag.disabled {
+        background: #fafafa;
+        border: 1px solid #ddd;
+        color: #aaa;
+    }
+    .color-swatch {
+        display: inline-block;
+        width: 24px;
+        height: 24px;
+        border: 1px solid #ccc;
+        vertical-align: middle;
+        margin-right: 8px;
+    }
+</style>
+
+<h1>WebP Analyzer</h1>
+
+<div class="drop-zone" id="dropZone">
+    <p>WebPファイルをここにドラッグ＆ドロップ<br>または クリックして選択</p>
+    <input type="file" id="fileInput" accept=".webp,image/webp">
+</div>
+
+<div class="results" id="results"></div>
+
+<script>
+// WebP Parser Class
+class WebPParser {
+    constructor(buffer) {
+        this.buffer = buffer;
+        this.view = new DataView(buffer);
+        this.uint8 = new Uint8Array(buffer);
+        this.pos = 0;
+        this.chunks = [];
+        this.frames = [];
+        this.vp8x = null;
+        this.anim = null;
+        this.iccp = null;
+        this.exif = null;
+        this.xmp = null;
+    }
+
+    readUint32LE() {
+        const val = this.view.getUint32(this.pos, true);
+        this.pos += 4;
+        return val;
+    }
+
+    readUint24LE() {
+        const val = this.uint8[this.pos] | (this.uint8[this.pos + 1] << 8) | (this.uint8[this.pos + 2] << 16);
+        this.pos += 3;
+        return val;
+    }
+
+    readUint16LE() {
+        const val = this.view.getUint16(this.pos, true);
+        this.pos += 2;
+        return val;
+    }
+
+    readByte() {
+        return this.uint8[this.pos++];
+    }
+
+    readBytes(n) {
+        const bytes = this.uint8.slice(this.pos, this.pos + n);
+        this.pos += n;
+        return bytes;
+    }
+
+    readString(n) {
+        let str = '';
+        for (let i = 0; i < n; i++) {
+            str += String.fromCharCode(this.readByte());
+        }
+        return str;
+    }
+
+    parse() {
+        const riff = this.readString(4);
+        if (riff !== 'RIFF') {
+            throw new Error('Not a valid RIFF file');
+        }
+
+        this.fileSize = this.readUint32LE() + 8;
+
+        const webp = this.readString(4);
+        if (webp !== 'WEBP') {
+            throw new Error('Not a valid WebP file');
+        }
+
+        this.riffHeader = { riff, fileSize: this.fileSize, webp };
+
+        while (this.pos < this.buffer.byteLength) {
+            if (this.pos + 8 > this.buffer.byteLength) break;
+
+            const chunkStart = this.pos;
+            const fourCC = this.readString(4);
+            const chunkSize = this.readUint32LE();
+            const dataStart = this.pos;
+
+            const paddedSize = chunkSize + (chunkSize % 2);
+
+            const chunk = {
+                fourCC, size: chunkSize,
+                offset: chunkStart, dataOffset: dataStart
+            };
+
+            this.chunks.push(chunk);
+
+            if (fourCC === 'VP8X') {
+                this.vp8x = this.parseVP8X(chunkSize);
+            } else if (fourCC === 'VP8 ') {
+                this.vp8 = this.parseVP8(chunkSize);
+                this.pos = dataStart + paddedSize;
+            } else if (fourCC === 'VP8L') {
+                this.vp8l = this.parseVP8L(chunkSize);
+                this.pos = dataStart + paddedSize;
+            } else if (fourCC === 'ANIM') {
+                this.anim = this.parseANIM();
+            } else if (fourCC === 'ANMF') {
+                const frame = this.parseANMF(chunkSize);
+                this.frames.push(frame);
+                this.pos = dataStart + paddedSize;
+            } else if (fourCC === 'ICCP') {
+                this.iccp = this.readBytes(chunkSize);
+                if (chunkSize % 2) this.pos++;
+            } else if (fourCC === 'EXIF') {
+                this.exif = this.readBytes(chunkSize);
+                if (chunkSize % 2) this.pos++;
+            } else if (fourCC === 'XMP ') {
+                this.xmp = this.readBytes(chunkSize);
+                if (chunkSize % 2) this.pos++;
+            } else if (fourCC === 'ALPH') {
+                chunk.alphaData = this.parseALPH(chunkSize);
+                this.pos = dataStart + paddedSize;
+            } else {
+                this.pos = dataStart + paddedSize;
+            }
+        }
+
+        return this;
+    }
+
+    parseVP8X(size) {
+        const flags = this.readByte();
+        this.readBytes(3);
+
+        const canvasWidth = this.readUint24LE() + 1;
+        const canvasHeight = this.readUint24LE() + 1;
+
+        return {
+            flags,
+            hasICC: (flags & 0x20) !== 0,
+            hasAlpha: (flags & 0x10) !== 0,
+            hasEXIF: (flags & 0x08) !== 0,
+            hasXMP: (flags & 0x04) !== 0,
+            hasAnimation: (flags & 0x02) !== 0,
+            canvasWidth, canvasHeight
+        };
+    }
+
+    parseVP8(size) {
+        const startPos = this.pos;
+        const frameTag = this.readUint24LE();
+        const keyFrame = (frameTag & 0x01) === 0;
+        const version = (frameTag >> 1) & 0x07;
+        const showFrame = (frameTag >> 4) & 0x01;
+        const firstPartSize = (frameTag >> 5) & 0x7FFFF;
+
+        let width = 0, height = 0, hScale = 0, vScale = 0;
+
+        if (keyFrame) {
+            const startCode = [this.readByte(), this.readByte(), this.readByte()];
+            const validStartCode = startCode[0] === 0x9D && startCode[1] === 0x01 && startCode[2] === 0x2A;
+
+            if (validStartCode) {
+                const dim1 = this.readUint16LE();
+                const dim2 = this.readUint16LE();
+                width = dim1 & 0x3FFF;
+                hScale = dim1 >> 14;
+                height = dim2 & 0x3FFF;
+                vScale = dim2 >> 14;
+            }
+        }
+
+        return {
+            keyFrame, version,
+            showFrame: showFrame === 1,
+            firstPartitionSize: firstPartSize,
+            width, height,
+            horizontalScale: hScale,
+            verticalScale: vScale,
+            dataSize: size
+        };
+    }
+
+    parseVP8L(size) {
+        const signature = this.readByte();
+        if (signature !== 0x2F) {
+            return { error: 'Invalid VP8L signature', dataSize: size };
+        }
+
+        const bits = this.readUint32LE();
+        const width = (bits & 0x3FFF) + 1;
+        const height = ((bits >> 14) & 0x3FFF) + 1;
+        const alphaIsUsed = ((bits >> 28) & 0x01) === 1;
+        const version = (bits >> 29) & 0x07;
+
+        return { signature, width, height, alphaIsUsed, version, dataSize: size };
+    }
+
+    parseANIM() {
+        const bgColor = this.readUint32LE();
+        const loopCount = this.readUint16LE();
+
+        const b = bgColor & 0xFF;
+        const g = (bgColor >> 8) & 0xFF;
+        const r = (bgColor >> 16) & 0xFF;
+        const a = (bgColor >> 24) & 0xFF;
+
+        return {
+            backgroundColor: { r, g, b, a, raw: bgColor },
+            loopCount,
+            loopDescription: loopCount === 0 ? '無限ループ' : `${loopCount}回`
+        };
+    }
+
+    parseANMF(chunkSize) {
+        const frameStart = this.pos;
+
+        const frameX = this.readUint24LE() * 2;
+        const frameY = this.readUint24LE() * 2;
+        const frameWidth = this.readUint24LE() + 1;
+        const frameHeight = this.readUint24LE() + 1;
+        const duration = this.readUint24LE();
+        const flags = this.readByte();
+
+        const blendingMethod = (flags & 0x02) >> 1;
+        const disposalMethod = flags & 0x01;
+
+        const subChunks = [];
+        const frameDataEnd = frameStart + chunkSize;
+
+        while (this.pos < frameDataEnd && this.pos + 8 <= this.buffer.byteLength) {
+            const subFourCC = this.readString(4);
+            const subSize = this.readUint32LE();
+            const subDataStart = this.pos;
+
+            let subChunk = {
+                fourCC: subFourCC, size: subSize,
+                offset: subDataStart - 8
+            };
+
+            if (subFourCC === 'VP8 ') {
+                subChunk.vp8 = this.parseVP8(subSize);
+            } else if (subFourCC === 'VP8L') {
+                subChunk.vp8l = this.parseVP8L(subSize);
+            } else if (subFourCC === 'ALPH') {
+                subChunk.alpha = this.parseALPH(subSize);
+            }
+
+            subChunks.push(subChunk);
+
+            const paddedSubSize = subSize + (subSize % 2);
+            this.pos = subDataStart + paddedSubSize;
+        }
+
+        return {
+            x: frameX, y: frameY,
+            width: frameWidth, height: frameHeight,
+            duration, durationMs: duration,
+            flags, blendingMethod,
+            blendingMethodName: blendingMethod === 0 ? 'ANIM_BLEND' : 'ANIM_NO_BLEND',
+            disposalMethod,
+            disposalMethodName: disposalMethod === 0 ? 'ANIM_NO_DISPOSE' : 'ANIM_DISPOSE_BACKGROUND',
+            subChunks
+        };
+    }
+
+    parseALPH(size) {
+        const header = this.readByte();
+        const preprocessing = (header >> 4) & 0x03;
+        const filtering = (header >> 2) & 0x03;
+        const compression = header & 0x03;
+
+        const filterNames = ['None', 'Horizontal', 'Vertical', 'Gradient'];
+        const compressionNames = ['No compression', 'Lossless WebP'];
+
+        return {
+            header, preprocessing, filtering,
+            filteringName: filterNames[filtering] || 'Unknown',
+            compression,
+            compressionName: compressionNames[compression] || 'Unknown',
+            dataSize: size - 1
+        };
+    }
+
+    isAnimated() {
+        return this.vp8x?.hasAnimation || this.frames.length > 0;
+    }
+
+    getFormat() {
+        if (this.vp8x) return 'Extended (VP8X)';
+        if (this.vp8l) return 'Lossless (VP8L)';
+        if (this.vp8) return 'Lossy (VP8)';
+        return 'Unknown';
+    }
+
+    getDimensions() {
+        if (this.vp8x) return { width: this.vp8x.canvasWidth, height: this.vp8x.canvasHeight };
+        if (this.vp8l) return { width: this.vp8l.width, height: this.vp8l.height };
+        if (this.vp8) return { width: this.vp8.width, height: this.vp8.height };
+        return { width: 0, height: 0 };
+    }
+}
+
+// UI
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+const results = document.getElementById('results');
+
+dropZone.addEventListener('click', () => fileInput.click());
+dropZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropZone.classList.add('dragover');
+});
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+    const file = e.dataTransfer.files[0];
+    if (file) processFile(file);
+});
+fileInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (file) processFile(file);
+});
+
+let webpData = null;
+let animationId = null;
+let currentFrame = 0;
+
+function processFile(file) {
+    results.innerHTML = '<div class="loading">解析中...</div>';
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+        try {
+            const parser = new WebPParser(e.target.result);
+            const webp = parser.parse();
+            await displayResults(webp, file, e.target.result);
+        } catch (err) {
+            results.innerHTML = `<div class="section"><h2>エラー</h2><p>${err.message}</p></div>`;
+            console.error(err);
+        }
+    };
+    reader.readAsArrayBuffer(file);
+}
+
+async function displayResults(webp, file, arrayBuffer) {
+    webpData = webp;
+    const dims = webp.getDimensions();
+    const isAnimated = webp.isAnimated();
+    let html = '';
+
+    // File Info
+    html += `
+    <div class="section">
+        <h2>ファイル情報</h2>
+        <div class="info-grid">
+            <div class="info-item">
+                <label>ファイル名</label>
+                <div class="value">${file.name}</div>
+            </div>
+            <div class="info-item">
+                <label>ファイルサイズ</label>
+                <div class="value">${formatBytes(file.size)}</div>
+            </div>
+            <div class="info-item">
+                <label>フォーマット</label>
+                <div class="value">${webp.getFormat()}</div>
+            </div>
+            <div class="info-item">
+                <label>種別</label>
+                <div class="value">${isAnimated ? 'アニメーションWebP' : '静止画WebP'}</div>
+            </div>
+            <div class="info-item">
+                <label>最終更新日</label>
+                <div class="value">${new Date(file.lastModified).toLocaleString()}</div>
+            </div>
+        </div>
+    </div>`;
+
+    // RIFF Header
+    html += `
+    <div class="section">
+        <h2>RIFFヘッダー</h2>
+        <div class="info-grid">
+            <div class="info-item">
+                <label>シグネチャ</label>
+                <div class="value">${webp.riffHeader.riff}</div>
+            </div>
+            <div class="info-item">
+                <label>ファイルサイズ (RIFFヘッダー)</label>
+                <div class="value">${formatBytes(webp.riffHeader.fileSize)}</div>
+            </div>
+            <div class="info-item">
+                <label>フォーマットID</label>
+                <div class="value">${webp.riffHeader.webp}</div>
+            </div>
+        </div>
+    </div>`;
+
+    // VP8X (Extended)
+    if (webp.vp8x) {
+        const vp8x = webp.vp8x;
+        html += `
+        <div class="section">
+            <h2>VP8X (拡張ヘッダー)</h2>
+            <div class="info-grid">
+                <div class="info-item">
+                    <label>キャンバスサイズ</label>
+                    <div class="value">${vp8x.canvasWidth} x ${vp8x.canvasHeight} px</div>
+                </div>
+                <div class="info-item">
+                    <label>フラグバイト</label>
+                    <div class="value">0x${vp8x.flags.toString(16).toUpperCase().padStart(2, '0')} (${vp8x.flags.toString(2).padStart(8, '0')})</div>
+                </div>
+            </div>
+            <h3>機能フラグ</h3>
+            <div class="feature-flags">
+                <span class="flag ${vp8x.hasAnimation ? 'enabled' : 'disabled'}">Animation</span>
+                <span class="flag ${vp8x.hasAlpha ? 'enabled' : 'disabled'}">Alpha</span>
+                <span class="flag ${vp8x.hasICC ? 'enabled' : 'disabled'}">ICC Profile</span>
+                <span class="flag ${vp8x.hasEXIF ? 'enabled' : 'disabled'}">EXIF</span>
+                <span class="flag ${vp8x.hasXMP ? 'enabled' : 'disabled'}">XMP</span>
+            </div>
+        </div>`;
+    }
+
+    // VP8 (Lossy)
+    if (webp.vp8) {
+        const vp8 = webp.vp8;
+        html += `
+        <div class="section">
+            <h2>VP8 (Lossy圧縮)</h2>
+            <div class="info-grid">
+                <div class="info-item">
+                    <label>画像サイズ</label>
+                    <div class="value">${vp8.width} x ${vp8.height} px</div>
+                </div>
+                <div class="info-item">
+                    <label>キーフレーム</label>
+                    <div class="value">${vp8.keyFrame ? 'Yes' : 'No'}</div>
+                </div>
+                <div class="info-item">
+                    <label>バージョン</label>
+                    <div class="value">${vp8.version}</div>
+                </div>
+                <div class="info-item">
+                    <label>Show Frame</label>
+                    <div class="value">${vp8.showFrame ? 'Yes' : 'No'}</div>
+                </div>
+                <div class="info-item">
+                    <label>最初のパーティションサイズ</label>
+                    <div class="value">${formatBytes(vp8.firstPartitionSize)}</div>
+                </div>
+                <div class="info-item">
+                    <label>水平スケール</label>
+                    <div class="value">${vp8.horizontalScale}</div>
+                </div>
+                <div class="info-item">
+                    <label>垂直スケール</label>
+                    <div class="value">${vp8.verticalScale}</div>
+                </div>
+                <div class="info-item">
+                    <label>データサイズ</label>
+                    <div class="value">${formatBytes(vp8.dataSize)}</div>
+                </div>
+            </div>
+        </div>`;
+    }
+
+    // VP8L (Lossless)
+    if (webp.vp8l) {
+        const vp8l = webp.vp8l;
+        html += `
+        <div class="section">
+            <h2>VP8L (Lossless圧縮)</h2>
+            <div class="info-grid">
+                <div class="info-item">
+                    <label>画像サイズ</label>
+                    <div class="value">${vp8l.width} x ${vp8l.height} px</div>
+                </div>
+                <div class="info-item">
+                    <label>シグネチャ</label>
+                    <div class="value">0x${vp8l.signature.toString(16).toUpperCase()}</div>
+                </div>
+                <div class="info-item">
+                    <label>アルファ使用</label>
+                    <div class="value">${vp8l.alphaIsUsed ? 'Yes' : 'No'}</div>
+                </div>
+                <div class="info-item">
+                    <label>バージョン</label>
+                    <div class="value">${vp8l.version}</div>
+                </div>
+                <div class="info-item">
+                    <label>データサイズ</label>
+                    <div class="value">${formatBytes(vp8l.dataSize)}</div>
+                </div>
+            </div>
+        </div>`;
+    }
+
+    // Preview (static) or ANIM (animation)
+    if (isAnimated && webp.anim) {
+        const anim = webp.anim;
+        const bgColor = anim.backgroundColor;
+        html += `
+        <div class="section">
+            <h2>ANIM (アニメーション設定)</h2>
+            <div class="info-grid">
+                <div class="info-item">
+                    <label>フレーム数</label>
+                    <div class="value">${webp.frames.length}</div>
+                </div>
+                <div class="info-item">
+                    <label>ループ回数</label>
+                    <div class="value">${anim.loopDescription}</div>
+                </div>
+                <div class="info-item">
+                    <label>合計再生時間</label>
+                    <div class="value">${calculateTotalDuration(webp.frames)} ms</div>
+                </div>
+                <div class="info-item">
+                    <label>平均フレームレート</label>
+                    <div class="value">${calculateFPS(webp.frames).toFixed(2)} FPS</div>
+                </div>
+                <div class="info-item">
+                    <label>背景色</label>
+                    <div class="value">
+                        <span class="color-swatch" style="background:rgba(${bgColor.r},${bgColor.g},${bgColor.b},${bgColor.a/255})"></span>
+                        RGBA(${bgColor.r}, ${bgColor.g}, ${bgColor.b}, ${bgColor.a})
+                    </div>
+                </div>
+                <div class="info-item">
+                    <label>背景色 (Raw)</label>
+                    <div class="value">0x${bgColor.raw.toString(16).toUpperCase().padStart(8, '0')}</div>
+                </div>
+            </div>
+
+            <div class="preview-section">
+                <canvas id="previewCanvas" width="${dims.width}" height="${dims.height}"></canvas>
+                <div class="animation-controls">
+                    <button onclick="playAnimation()">&#9654; 再生</button>
+                    <button onclick="pauseAnimation()">&#9646;&#9646; 停止</button>
+                    <button onclick="stepFrame(-1)">&#9664; 前</button>
+                    <button onclick="stepFrame(1)">&#9654; 次</button>
+                </div>
+                <div id="frameCounter" style="margin-top:10px;color:#666;">フレーム: 0 / ${webp.frames.length}</div>
+            </div>
+        </div>`;
+    } else {
+        html += `
+        <div class="section">
+            <h2>画像プレビュー</h2>
+            <div class="preview-section">
+                <img id="staticPreview" alt="WebP Preview">
+            </div>
+        </div>`;
+    }
+
+    // ICC Profile
+    if (webp.iccp) {
+        html += `
+        <div class="section">
+            <h2>ICCプロファイル</h2>
+            <div class="info-grid">
+                <div class="info-item">
+                    <label>プロファイルサイズ</label>
+                    <div class="value">${formatBytes(webp.iccp.length)}</div>
+                </div>
+            </div>
+            <details class="raw-data">
+                <summary>Raw Data (先頭256バイト)</summary>
+                <div class="hex-dump">${formatHexDump(webp.iccp.slice(0, 256))}</div>
+            </details>
+        </div>`;
+    }
+
+    // EXIF
+    if (webp.exif) {
+        html += `
+        <div class="section">
+            <h2>EXIFデータ</h2>
+            <div class="info-grid">
+                <div class="info-item">
+                    <label>EXIFサイズ</label>
+                    <div class="value">${formatBytes(webp.exif.length)}</div>
+                </div>
+            </div>
+            <details class="raw-data">
+                <summary>Raw Data (先頭256バイト)</summary>
+                <div class="hex-dump">${formatHexDump(webp.exif.slice(0, 256))}</div>
+            </details>
+        </div>`;
+    }
+
+    // XMP
+    if (webp.xmp) {
+        let xmpText;
+        try {
+            xmpText = new TextDecoder('utf-8').decode(webp.xmp);
+        } catch {
+            xmpText = String.fromCharCode(...webp.xmp);
+        }
+        html += `
+        <div class="section">
+            <h2>XMPメタデータ</h2>
+            <div class="info-grid">
+                <div class="info-item">
+                    <label>XMPサイズ</label>
+                    <div class="value">${formatBytes(webp.xmp.length)}</div>
+                </div>
+            </div>
+            <details class="raw-data">
+                <summary>XMP Content</summary>
+                <div class="hex-dump" style="white-space:pre-wrap;">${escapeHtml(xmpText.substring(0, 2000))}</div>
+            </details>
+        </div>`;
+    }
+
+    // All Chunks
+    html += `
+    <div class="section">
+        <h2>チャンク一覧 (${webp.chunks.length}個)</h2>
+        <table>
+            <tr>
+                <th>オフセット</th>
+                <th>FourCC</th>
+                <th>サイズ</th>
+                <th>説明</th>
+            </tr>
+            ${webp.chunks.map(c => `
+            <tr>
+                <td>0x${c.offset.toString(16).toUpperCase()}</td>
+                <td>${c.fourCC}</td>
+                <td>${formatBytes(c.size)}</td>
+                <td>${getChunkDescription(c.fourCC)}</td>
+            </tr>`).join('')}
+        </table>
+    </div>`;
+
+    // Frame Details
+    if (webp.frames.length > 0) {
+        html += `
+        <div class="section">
+            <h2>フレーム詳細 (ANMF)</h2>
+            <div class="frames-container" id="framesContainer">
+                ${webp.frames.map((frame, index) => `
+                <div class="frame-card">
+                    <h4>Frame #${index + 1}</h4>
+                    <div class="frame-info">
+                        <div><span class="label">位置:</span> <span class="val">(${frame.x}, ${frame.y})</span></div>
+                        <div><span class="label">サイズ:</span> <span class="val">${frame.width} x ${frame.height} px</span></div>
+                        <div><span class="label">待ち時間:</span> <span class="val">${frame.durationMs} ms</span></div>
+                        <div><span class="label">フラグ:</span> <span class="val">0x${frame.flags.toString(16).toUpperCase().padStart(2, '0')}</span></div>
+                        <div><span class="label">Blending:</span> <span class="val">${frame.blendingMethod} - ${frame.blendingMethodName}</span></div>
+                        <div><span class="label">Disposal:</span> <span class="val">${frame.disposalMethod} - ${frame.disposalMethodName}</span></div>
+                        <div><span class="label">サブチャンク:</span> <span class="val">${frame.subChunks.map(s => s.fourCC).join(', ')}</span></div>
+                        ${frame.subChunks.map(sub => {
+                            if (sub.vp8) {
+                                return `<div><span class="label">VP8:</span> <span class="val">${sub.vp8.width}x${sub.vp8.height}, ${formatBytes(sub.size)}</span></div>`;
+                            } else if (sub.vp8l) {
+                                return `<div><span class="label">VP8L:</span> <span class="val">${sub.vp8l.width}x${sub.vp8l.height}, ${formatBytes(sub.size)}</span></div>`;
+                            } else if (sub.alpha) {
+                                return `<div><span class="label">ALPH:</span> <span class="val">${sub.alpha.compressionName}, ${formatBytes(sub.size)}</span></div>`;
+                            }
+                            return '';
+                        }).join('')}
+                    </div>
+                </div>`).join('')}
+            </div>
+        </div>`;
+    }
+
+    results.innerHTML = html;
+
+    // Setup preview
+    const blob = new Blob([arrayBuffer], { type: 'image/webp' });
+    const url = URL.createObjectURL(blob);
+
+    if (isAnimated) {
+        setupAnimation(url);
+    } else {
+        const previewEl = document.getElementById('staticPreview');
+        if (previewEl) {
+            previewEl.src = url;
+        }
+    }
+}
+
+async function setupAnimation(url) {
+    const canvas = document.getElementById('previewCanvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+
+    const img = new Image();
+    img.src = url;
+
+    img.onload = () => {
+        ctx.drawImage(img, 0, 0);
+        updateFrameCounter(1);
+    };
+
+    window.webpPreviewImg = img;
+    window.webpPreviewUrl = url;
+}
+
+function updateFrameCounter(frame) {
+    const counter = document.getElementById('frameCounter');
+    if (counter && webpData) {
+        counter.textContent = `フレーム: ${frame} / ${webpData.frames.length}`;
+    }
+}
+
+function playAnimation() {
+    if (animationId || !webpData) return;
+
+    let frameIndex = 0;
+    function animate() {
+        if (webpData.frames.length === 0) return;
+
+        const frame = webpData.frames[frameIndex];
+        updateFrameCounter(frameIndex + 1);
+
+        const delay = frame.durationMs || 100;
+        animationId = setTimeout(() => {
+            frameIndex = (frameIndex + 1) % webpData.frames.length;
+            animate();
+        }, delay);
+    }
+    animate();
+}
+
+function pauseAnimation() {
+    if (animationId) {
+        clearTimeout(animationId);
+        animationId = null;
+    }
+}
+
+function stepFrame(delta) {
+    pauseAnimation();
+    if (!webpData || webpData.frames.length === 0) return;
+    currentFrame = (currentFrame + delta + webpData.frames.length) % webpData.frames.length;
+    updateFrameCounter(currentFrame + 1);
+}
+
+// Utility functions
+function formatBytes(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(2) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+}
+
+function formatHexDump(data) {
+    let result = '';
+    for (let i = 0; i < data.length; i += 16) {
+        const hex = [];
+        const ascii = [];
+        for (let j = 0; j < 16 && i + j < data.length; j++) {
+            const byte = data[i + j];
+            hex.push(byte.toString(16).toUpperCase().padStart(2, '0'));
+            ascii.push(byte >= 32 && byte < 127 ? String.fromCharCode(byte) : '.');
+        }
+        const offset = i.toString(16).padStart(8, '0').toUpperCase();
+        result += `${offset}  ${hex.join(' ').padEnd(48)}  ${ascii.join('')}\n`;
+    }
+    return result;
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function calculateTotalDuration(frames) {
+    return frames.reduce((sum, f) => sum + (f.durationMs || 100), 0);
+}
+
+function calculateFPS(frames) {
+    const totalMs = calculateTotalDuration(frames);
+    if (totalMs === 0) return 0;
+    return (frames.length / totalMs) * 1000;
+}
+
+function getChunkDescription(fourCC) {
+    const descriptions = {
+        'VP8X': '拡張ヘッダー (Extended)',
+        'VP8 ': 'Lossy画像データ',
+        'VP8L': 'Lossless画像データ',
+        'ANIM': 'アニメーション設定',
+        'ANMF': 'アニメーションフレーム',
+        'ALPH': 'アルファチャンネル',
+        'ICCP': 'ICCカラープロファイル',
+        'EXIF': 'EXIFメタデータ',
+        'XMP ': 'XMPメタデータ'
+    };
+    return descriptions[fourCC] || '不明';
+}
+</script>

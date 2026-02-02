@@ -1,0 +1,1162 @@
+---
+layout: post
+title: GIF Analyzer
+---
+
+<nav>
+    <strong>GIF</strong> |
+    <a href="analyzer-png.html">PNG</a> |
+    <a href="analyzer-webp.html">WebP</a>
+</nav>
+
+<style>
+    .drop-zone {
+        border: 2px dashed #999;
+        padding: 40px;
+        text-align: center;
+        margin: 20px auto;
+        max-width: 600px;
+        cursor: pointer;
+    }
+    .drop-zone:hover, .drop-zone.dragover {
+        border-color: #333;
+        background: #f5f5f5;
+    }
+    .drop-zone p {
+        color: #666;
+    }
+    #fileInput {
+        display: none;
+    }
+    .results {
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+    .section {
+        border: 1px solid #ddd;
+        padding: 20px;
+        margin: 20px 0;
+    }
+    .section h2 {
+        border-bottom: 1px solid #ddd;
+        padding-bottom: 10px;
+        margin-bottom: 15px;
+    }
+    .section h3 {
+        margin: 15px 0 10px 0;
+    }
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        gap: 10px;
+    }
+    .info-item {
+        background: #f9f9f9;
+        padding: 10px;
+        border: 1px solid #eee;
+    }
+    .info-item label {
+        color: #666;
+        font-size: 0.85em;
+        display: block;
+        margin-bottom: 4px;
+    }
+    .info-item .value {
+        font-weight: bold;
+        font-family: monospace;
+    }
+    .color-palette {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 2px;
+        margin-top: 10px;
+        max-height: 200px;
+        overflow-y: auto;
+        padding: 10px;
+        background: #f9f9f9;
+        border: 1px solid #eee;
+    }
+    .color-swatch {
+        width: 20px;
+        height: 20px;
+        border: 1px solid #ccc;
+        cursor: pointer;
+        position: relative;
+    }
+    .color-swatch:hover::after {
+        content: attr(data-info);
+        position: absolute;
+        bottom: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #333;
+        color: #fff;
+        padding: 4px 8px;
+        font-size: 11px;
+        white-space: nowrap;
+        z-index: 100;
+    }
+    .frames-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+        gap: 15px;
+        margin-top: 15px;
+    }
+    .frame-card {
+        background: #f9f9f9;
+        padding: 15px;
+        border: 1px solid #ddd;
+    }
+    .frame-card h4 {
+        margin-bottom: 10px;
+    }
+    .frame-preview {
+        display: flex;
+        gap: 15px;
+        align-items: flex-start;
+    }
+    .frame-canvas {
+        border: 1px solid #ccc;
+        background: repeating-conic-gradient(#ddd 0% 25%, #fff 0% 50%) 50% / 10px 10px;
+        max-width: 200px;
+        max-height: 200px;
+        image-rendering: pixelated;
+    }
+    .frame-info {
+        flex: 1;
+        font-size: 0.9em;
+    }
+    .frame-info div {
+        margin: 4px 0;
+        padding: 4px;
+        background: #f0f0f0;
+    }
+    .frame-info span.label {
+        color: #666;
+    }
+    .frame-info span.val {
+        font-family: monospace;
+    }
+    .hex-dump {
+        font-family: monospace;
+        font-size: 12px;
+        background: #f5f5f5;
+        padding: 15px;
+        border: 1px solid #ddd;
+        overflow-x: auto;
+        max-height: 300px;
+        overflow-y: auto;
+        white-space: pre;
+    }
+    .extensions-list {
+        margin-top: 10px;
+    }
+    .extension-item {
+        border: 1px solid #ddd;
+        padding: 12px;
+        margin: 10px 0;
+    }
+    .extension-item h4 {
+        margin-bottom: 8px;
+    }
+    .preview-section {
+        text-align: center;
+        padding: 20px;
+    }
+    #previewCanvas {
+        border: 1px solid #ccc;
+        background: repeating-conic-gradient(#ddd 0% 25%, #fff 0% 50%) 50% / 10px 10px;
+        max-width: 100%;
+        image-rendering: pixelated;
+    }
+    .animation-controls {
+        margin-top: 15px;
+    }
+    .animation-controls button {
+        background: #fff;
+        border: 1px solid #999;
+        padding: 8px 20px;
+        cursor: pointer;
+        font-weight: bold;
+        margin: 0 4px;
+    }
+    .animation-controls button:hover {
+        background: #f0f0f0;
+    }
+    .raw-data {
+        margin-top: 10px;
+    }
+    .raw-data summary {
+        cursor: pointer;
+        padding: 8px;
+        background: #f5f5f5;
+        border: 1px solid #ddd;
+    }
+    .comment-text {
+        background: #f9f9f9;
+        border: 1px solid #ddd;
+        padding: 10px;
+        margin-top: 10px;
+        white-space: pre-wrap;
+        font-family: monospace;
+    }
+    .loading {
+        text-align: center;
+        padding: 40px;
+        color: #666;
+    }
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+    }
+    th, td {
+        padding: 8px 12px;
+        text-align: left;
+        border-bottom: 1px solid #ddd;
+    }
+    th {
+        background: #f5f5f5;
+    }
+    td {
+        font-family: monospace;
+    }
+    .bitfield {
+        display: inline-flex;
+        gap: 2px;
+    }
+    .bit {
+        width: 20px;
+        height: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #eee;
+        font-size: 11px;
+    }
+    .bit.set {
+        background: #333;
+        color: #fff;
+    }
+</style>
+
+<h1>GIF Analyzer</h1>
+
+<div class="drop-zone" id="dropZone">
+    <p>GIFファイルをここにドラッグ＆ドロップ<br>または クリックして選択</p>
+    <input type="file" id="fileInput" accept=".gif,image/gif">
+</div>
+
+<div class="results" id="results"></div>
+
+<script>
+// GIF Parser Class
+class GIFParser {
+    constructor(buffer) {
+        this.buffer = buffer;
+        this.view = new DataView(buffer);
+        this.uint8 = new Uint8Array(buffer);
+        this.pos = 0;
+        this.frames = [];
+        this.globalColorTable = null;
+        this.header = null;
+        this.logicalScreenDescriptor = null;
+        this.extensions = [];
+        this.comments = [];
+        this.applicationExtensions = [];
+        this.loopCount = 0;
+    }
+
+    readByte() {
+        return this.uint8[this.pos++];
+    }
+
+    readBytes(n) {
+        const bytes = this.uint8.slice(this.pos, this.pos + n);
+        this.pos += n;
+        return bytes;
+    }
+
+    readUint16() {
+        const val = this.view.getUint16(this.pos, true);
+        this.pos += 2;
+        return val;
+    }
+
+    readString(n) {
+        let str = '';
+        for (let i = 0; i < n; i++) {
+            str += String.fromCharCode(this.readByte());
+        }
+        return str;
+    }
+
+    parse() {
+        this.header = {
+            signature: this.readString(3),
+            version: this.readString(3)
+        };
+
+        if (this.header.signature !== 'GIF') {
+            throw new Error('Not a valid GIF file');
+        }
+
+        this.logicalScreenDescriptor = this.parseLogicalScreenDescriptor();
+
+        if (this.logicalScreenDescriptor.globalColorTableFlag) {
+            const size = 3 * Math.pow(2, this.logicalScreenDescriptor.globalColorTableSize + 1);
+            this.globalColorTable = this.parseColorTable(size / 3);
+        }
+
+        this.parseBlocks();
+        return this;
+    }
+
+    parseLogicalScreenDescriptor() {
+        const width = this.readUint16();
+        const height = this.readUint16();
+        const packed = this.readByte();
+        const bgColorIndex = this.readByte();
+        const pixelAspectRatio = this.readByte();
+
+        return {
+            width,
+            height,
+            packedByte: packed,
+            globalColorTableFlag: (packed & 0x80) !== 0,
+            colorResolution: ((packed & 0x70) >> 4) + 1,
+            sortFlag: (packed & 0x08) !== 0,
+            globalColorTableSize: packed & 0x07,
+            backgroundColorIndex: bgColorIndex,
+            pixelAspectRatio: pixelAspectRatio,
+            actualAspectRatio: pixelAspectRatio === 0 ? 'Not specified' : (pixelAspectRatio + 15) / 64
+        };
+    }
+
+    parseColorTable(count) {
+        const colors = [];
+        for (let i = 0; i < count; i++) {
+            colors.push({
+                r: this.readByte(),
+                g: this.readByte(),
+                b: this.readByte(),
+                index: i
+            });
+        }
+        return colors;
+    }
+
+    parseBlocks() {
+        let currentGCE = null;
+
+        while (this.pos < this.buffer.byteLength) {
+            const introducer = this.readByte();
+
+            if (introducer === 0x21) {
+                const label = this.readByte();
+
+                if (label === 0xF9) {
+                    currentGCE = this.parseGraphicsControlExtension();
+                } else if (label === 0xFE) {
+                    this.parseCommentExtension();
+                } else if (label === 0xFF) {
+                    this.parseApplicationExtension();
+                } else if (label === 0x01) {
+                    this.parsePlainTextExtension();
+                } else {
+                    this.skipSubBlocks();
+                }
+            } else if (introducer === 0x2C) {
+                const frame = this.parseImageDescriptor(currentGCE);
+                this.frames.push(frame);
+                currentGCE = null;
+            } else if (introducer === 0x3B) {
+                break;
+            } else {
+                console.warn('Unknown block type:', introducer.toString(16));
+            }
+        }
+    }
+
+    parseGraphicsControlExtension() {
+        const blockSize = this.readByte();
+        const packed = this.readByte();
+        const delayTime = this.readUint16();
+        const transparentColorIndex = this.readByte();
+        this.readByte();
+
+        const disposalMethod = (packed & 0x1C) >> 2;
+        const disposalMethods = [
+            'No disposal specified',
+            'Do not dispose',
+            'Restore to background',
+            'Restore to previous'
+        ];
+
+        return {
+            blockSize,
+            packedByte: packed,
+            disposalMethod: disposalMethod,
+            disposalMethodName: disposalMethods[disposalMethod] || 'Unknown',
+            userInputFlag: (packed & 0x02) !== 0,
+            transparentColorFlag: (packed & 0x01) !== 0,
+            delayTime: delayTime,
+            delayTimeMs: delayTime * 10,
+            transparentColorIndex
+        };
+    }
+
+    parseCommentExtension() {
+        let comment = '';
+        let blockSize;
+        while ((blockSize = this.readByte()) !== 0) {
+            for (let i = 0; i < blockSize; i++) {
+                comment += String.fromCharCode(this.readByte());
+            }
+        }
+        this.comments.push(comment);
+        this.extensions.push({ type: 'Comment', data: comment });
+    }
+
+    parseApplicationExtension() {
+        const blockSize = this.readByte();
+        const identifier = this.readString(8);
+        const authCode = this.readString(3);
+
+        let data = [];
+        let subBlockSize;
+        while ((subBlockSize = this.readByte()) !== 0) {
+            const subBlock = this.readBytes(subBlockSize);
+            data.push(...subBlock);
+        }
+
+        const ext = {
+            type: 'Application',
+            identifier: identifier.trim(),
+            authenticationCode: authCode,
+            data: new Uint8Array(data)
+        };
+
+        if (identifier === 'NETSCAPE' && authCode === '2.0' && data.length >= 3) {
+            if (data[0] === 1) {
+                this.loopCount = data[1] | (data[2] << 8);
+                ext.loopCount = this.loopCount;
+                ext.loopDescription = this.loopCount === 0 ? 'Infinite loop' : `${this.loopCount} iterations`;
+            }
+        }
+
+        this.applicationExtensions.push(ext);
+        this.extensions.push(ext);
+    }
+
+    parsePlainTextExtension() {
+        const blockSize = this.readByte();
+        const textData = {
+            type: 'PlainText',
+            textGridLeft: this.readUint16(),
+            textGridTop: this.readUint16(),
+            textGridWidth: this.readUint16(),
+            textGridHeight: this.readUint16(),
+            charCellWidth: this.readByte(),
+            charCellHeight: this.readByte(),
+            textFgColorIndex: this.readByte(),
+            textBgColorIndex: this.readByte(),
+            text: ''
+        };
+
+        let subBlockSize;
+        while ((subBlockSize = this.readByte()) !== 0) {
+            for (let i = 0; i < subBlockSize; i++) {
+                textData.text += String.fromCharCode(this.readByte());
+            }
+        }
+
+        this.extensions.push(textData);
+    }
+
+    parseImageDescriptor(gce) {
+        const left = this.readUint16();
+        const top = this.readUint16();
+        const width = this.readUint16();
+        const height = this.readUint16();
+        const packed = this.readByte();
+
+        const hasLocalColorTable = (packed & 0x80) !== 0;
+        const interlaced = (packed & 0x40) !== 0;
+        const sorted = (packed & 0x20) !== 0;
+        const localColorTableSize = packed & 0x07;
+
+        let localColorTable = null;
+        if (hasLocalColorTable) {
+            const size = Math.pow(2, localColorTableSize + 1);
+            localColorTable = this.parseColorTable(size);
+        }
+
+        const lzwMinCodeSize = this.readByte();
+        const compressedData = [];
+        let subBlockSize;
+        while ((subBlockSize = this.readByte()) !== 0) {
+            const subBlock = this.readBytes(subBlockSize);
+            compressedData.push(...subBlock);
+        }
+
+        const colorTable = localColorTable || this.globalColorTable;
+        const indexStream = this.decodeLZW(new Uint8Array(compressedData), lzwMinCodeSize, width * height);
+        const pixels = this.createPixelData(indexStream, colorTable, width, height, gce);
+
+        return {
+            descriptor: {
+                left, top, width, height,
+                packedByte: packed,
+                localColorTableFlag: hasLocalColorTable,
+                interlaceFlag: interlaced,
+                sortFlag: sorted,
+                localColorTableSize: hasLocalColorTable ? Math.pow(2, localColorTableSize + 1) : 0
+            },
+            localColorTable,
+            lzwMinCodeSize,
+            compressedDataSize: compressedData.length,
+            graphicsControl: gce,
+            pixels,
+            indexStream
+        };
+    }
+
+    decodeLZW(data, minCodeSize, pixelCount) {
+        const clearCode = 1 << minCodeSize;
+        const eoiCode = clearCode + 1;
+
+        let codeSize = minCodeSize + 1;
+        let codeMask = (1 << codeSize) - 1;
+        let nextCode = eoiCode + 1;
+
+        let codeTable = [];
+        for (let i = 0; i < clearCode; i++) {
+            codeTable[i] = [i];
+        }
+        codeTable[clearCode] = [];
+        codeTable[eoiCode] = [];
+
+        const output = [];
+        let bitBuffer = 0;
+        let bitCount = 0;
+        let dataIndex = 0;
+        let prevCode = -1;
+
+        const readCode = () => {
+            while (bitCount < codeSize && dataIndex < data.length) {
+                bitBuffer |= data[dataIndex++] << bitCount;
+                bitCount += 8;
+            }
+            const code = bitBuffer & codeMask;
+            bitBuffer >>= codeSize;
+            bitCount -= codeSize;
+            return code;
+        };
+
+        while (output.length < pixelCount && dataIndex < data.length) {
+            const code = readCode();
+
+            if (code === clearCode) {
+                codeSize = minCodeSize + 1;
+                codeMask = (1 << codeSize) - 1;
+                nextCode = eoiCode + 1;
+                codeTable = [];
+                for (let i = 0; i < clearCode; i++) {
+                    codeTable[i] = [i];
+                }
+                codeTable[clearCode] = [];
+                codeTable[eoiCode] = [];
+                prevCode = -1;
+                continue;
+            }
+
+            if (code === eoiCode) {
+                break;
+            }
+
+            let entry;
+            if (code < nextCode) {
+                entry = codeTable[code];
+            } else if (code === nextCode && prevCode !== -1) {
+                entry = [...codeTable[prevCode], codeTable[prevCode][0]];
+            } else {
+                console.warn('Invalid LZW code:', code);
+                break;
+            }
+
+            output.push(...entry);
+
+            if (prevCode !== -1 && nextCode < 4096) {
+                codeTable[nextCode] = [...codeTable[prevCode], entry[0]];
+                nextCode++;
+
+                if (nextCode > codeMask && codeSize < 12) {
+                    codeSize++;
+                    codeMask = (1 << codeSize) - 1;
+                }
+            }
+
+            prevCode = code;
+        }
+
+        return output;
+    }
+
+    createPixelData(indexStream, colorTable, width, height, gce) {
+        const imageData = new Uint8ClampedArray(width * height * 4);
+        const transparentIndex = gce?.transparentColorFlag ? gce.transparentColorIndex : -1;
+
+        for (let i = 0; i < width * height && i < indexStream.length; i++) {
+            const colorIndex = indexStream[i];
+            const pixelOffset = i * 4;
+
+            if (colorIndex === transparentIndex) {
+                imageData[pixelOffset] = 0;
+                imageData[pixelOffset + 1] = 0;
+                imageData[pixelOffset + 2] = 0;
+                imageData[pixelOffset + 3] = 0;
+            } else if (colorTable && colorIndex < colorTable.length) {
+                const color = colorTable[colorIndex];
+                imageData[pixelOffset] = color.r;
+                imageData[pixelOffset + 1] = color.g;
+                imageData[pixelOffset + 2] = color.b;
+                imageData[pixelOffset + 3] = 255;
+            }
+        }
+
+        return imageData;
+    }
+
+    skipSubBlocks() {
+        let blockSize;
+        while ((blockSize = this.readByte()) !== 0) {
+            this.pos += blockSize;
+        }
+    }
+}
+
+// UI Functions
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+const results = document.getElementById('results');
+
+dropZone.addEventListener('click', () => fileInput.click());
+
+dropZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropZone.classList.add('dragover');
+});
+
+dropZone.addEventListener('dragleave', () => {
+    dropZone.classList.remove('dragover');
+});
+
+dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+    const file = e.dataTransfer.files[0];
+    if (file) processFile(file);
+});
+
+fileInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (file) processFile(file);
+});
+
+function processFile(file) {
+    if (!file.type.includes('gif') && !file.name.toLowerCase().endsWith('.gif')) {
+        alert('GIFファイルを選択してください');
+        return;
+    }
+
+    results.innerHTML = '<div class="loading">解析中...</div>';
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        try {
+            const parser = new GIFParser(e.target.result);
+            const gif = parser.parse();
+            displayResults(gif, file);
+        } catch (err) {
+            results.innerHTML = `<div class="section"><h2>エラー</h2><p>${err.message}</p></div>`;
+            console.error(err);
+        }
+    };
+    reader.readAsArrayBuffer(file);
+}
+
+function displayResults(gif, file) {
+    const isAnimated = gif.frames.length > 1;
+    let html = '';
+
+    // File Info
+    html += `
+    <div class="section">
+        <h2>ファイル情報</h2>
+        <div class="info-grid">
+            <div class="info-item">
+                <label>ファイル名</label>
+                <div class="value">${file.name}</div>
+            </div>
+            <div class="info-item">
+                <label>ファイルサイズ</label>
+                <div class="value">${formatBytes(file.size)}</div>
+            </div>
+            <div class="info-item">
+                <label>MIMEタイプ</label>
+                <div class="value">${file.type || 'image/gif'}</div>
+            </div>
+            <div class="info-item">
+                <label>種別</label>
+                <div class="value">${isAnimated ? 'アニメーションGIF' : '静止画GIF'}</div>
+            </div>
+            <div class="info-item">
+                <label>最終更新日</label>
+                <div class="value">${new Date(file.lastModified).toLocaleString()}</div>
+            </div>
+        </div>
+    </div>`;
+
+    // Header
+    html += `
+    <div class="section">
+        <h2>GIFヘッダー</h2>
+        <div class="info-grid">
+            <div class="info-item">
+                <label>シグネチャ</label>
+                <div class="value">${gif.header.signature}</div>
+            </div>
+            <div class="info-item">
+                <label>バージョン</label>
+                <div class="value">${gif.header.version}</div>
+            </div>
+        </div>
+    </div>`;
+
+    // Logical Screen Descriptor
+    const lsd = gif.logicalScreenDescriptor;
+    html += `
+    <div class="section">
+        <h2>論理スクリーン記述子 (Logical Screen Descriptor)</h2>
+        <div class="info-grid">
+            <div class="info-item">
+                <label>キャンバスサイズ</label>
+                <div class="value">${lsd.width} x ${lsd.height} px</div>
+            </div>
+            <div class="info-item">
+                <label>パックドバイト</label>
+                <div class="value">${formatBinary(lsd.packedByte)} (0x${lsd.packedByte.toString(16).toUpperCase()})</div>
+            </div>
+            <div class="info-item">
+                <label>グローバルカラーテーブル</label>
+                <div class="value">${lsd.globalColorTableFlag ? '有り' : '無し'}</div>
+            </div>
+            <div class="info-item">
+                <label>色解像度</label>
+                <div class="value">${lsd.colorResolution} bits/pixel</div>
+            </div>
+            <div class="info-item">
+                <label>ソートフラグ</label>
+                <div class="value">${lsd.sortFlag ? 'ソート済み' : 'ソートなし'}</div>
+            </div>
+            <div class="info-item">
+                <label>グローバルカラーテーブルサイズ</label>
+                <div class="value">${lsd.globalColorTableFlag ? Math.pow(2, lsd.globalColorTableSize + 1) + ' 色' : 'N/A'}</div>
+            </div>
+            <div class="info-item">
+                <label>背景色インデックス</label>
+                <div class="value">${lsd.backgroundColorIndex}</div>
+            </div>
+            <div class="info-item">
+                <label>ピクセルアスペクト比</label>
+                <div class="value">${lsd.pixelAspectRatio} ${typeof lsd.actualAspectRatio === 'number' ? '(' + lsd.actualAspectRatio.toFixed(3) + ')' : '(' + lsd.actualAspectRatio + ')'}</div>
+            </div>
+        </div>
+
+        <h3>パックドバイト詳細</h3>
+        <table>
+            <tr><th>ビット</th><th>名称</th><th>値</th></tr>
+            <tr><td>7</td><td>グローバルカラーテーブルフラグ</td><td>${(lsd.packedByte >> 7) & 1}</td></tr>
+            <tr><td>6-4</td><td>色解像度</td><td>${(lsd.packedByte >> 4) & 0x07} (${lsd.colorResolution} bits)</td></tr>
+            <tr><td>3</td><td>ソートフラグ</td><td>${(lsd.packedByte >> 3) & 1}</td></tr>
+            <tr><td>2-0</td><td>グローバルカラーテーブルサイズ</td><td>${lsd.packedByte & 0x07}</td></tr>
+        </table>
+    </div>`;
+
+    // Global Color Table
+    if (gif.globalColorTable) {
+        const bgColor = gif.globalColorTable[lsd.backgroundColorIndex];
+        html += `
+        <div class="section">
+            <h2>グローバルカラーテーブル (${gif.globalColorTable.length}色)</h2>
+            <div class="info-grid">
+                <div class="info-item">
+                    <label>背景色 (インデックス ${lsd.backgroundColorIndex})</label>
+                    <div class="value" style="display:flex;align-items:center;gap:10px;">
+                        <span style="display:inline-block;width:24px;height:24px;background:rgb(${bgColor.r},${bgColor.g},${bgColor.b});border:1px solid #ccc;"></span>
+                        RGB(${bgColor.r}, ${bgColor.g}, ${bgColor.b}) / #${toHex(bgColor.r)}${toHex(bgColor.g)}${toHex(bgColor.b)}
+                    </div>
+                </div>
+            </div>
+            <div class="color-palette">
+                ${gif.globalColorTable.map((c, i) =>
+                    `<div class="color-swatch" style="background:rgb(${c.r},${c.g},${c.b})" data-info="#${i}: RGB(${c.r},${c.g},${c.b}) #${toHex(c.r)}${toHex(c.g)}${toHex(c.b)}"></div>`
+                ).join('')}
+            </div>
+        </div>`;
+    }
+
+    // Preview & Animation Info
+    html += `
+    <div class="section">
+        <h2>${isAnimated ? 'アニメーション情報' : '画像プレビュー'}</h2>
+        <div class="info-grid">
+            <div class="info-item">
+                <label>フレーム数</label>
+                <div class="value">${gif.frames.length}</div>
+            </div>`;
+
+    if (isAnimated) {
+        html += `
+            <div class="info-item">
+                <label>ループ回数</label>
+                <div class="value">${gif.loopCount === 0 ? '無限ループ' : gif.loopCount + '回'}</div>
+            </div>
+            <div class="info-item">
+                <label>合計再生時間</label>
+                <div class="value">${calculateTotalDuration(gif.frames)} ms</div>
+            </div>
+            <div class="info-item">
+                <label>平均フレームレート</label>
+                <div class="value">${calculateFPS(gif.frames).toFixed(2)} FPS</div>
+            </div>`;
+    }
+
+    html += `
+        </div>
+
+        <div class="preview-section">
+            <canvas id="previewCanvas" width="${lsd.width}" height="${lsd.height}"></canvas>`;
+
+    if (isAnimated) {
+        html += `
+            <div class="animation-controls">
+                <button onclick="playAnimation()">&#9654; 再生</button>
+                <button onclick="pauseAnimation()">&#9646;&#9646; 停止</button>
+                <button onclick="stepFrame(-1)">&#9664; 前</button>
+                <button onclick="stepFrame(1)">&#9654; 次</button>
+            </div>
+            <div id="frameCounter" style="margin-top:10px;color:#666;">フレーム: 1 / ${gif.frames.length}</div>`;
+    }
+
+    html += `
+        </div>
+    </div>`;
+
+    // Extensions
+    if (gif.extensions.length > 0) {
+        html += `
+        <div class="section">
+            <h2>拡張ブロック</h2>
+            <div class="extensions-list">`;
+
+        gif.extensions.forEach((ext, i) => {
+            if (ext.type === 'Application') {
+                html += `
+                <div class="extension-item">
+                    <h4>Application Extension #${i + 1}</h4>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <label>識別子</label>
+                            <div class="value">${ext.identifier}</div>
+                        </div>
+                        <div class="info-item">
+                            <label>認証コード</label>
+                            <div class="value">${ext.authenticationCode}</div>
+                        </div>
+                        ${ext.loopCount !== undefined ? `
+                        <div class="info-item">
+                            <label>ループ回数</label>
+                            <div class="value">${ext.loopDescription}</div>
+                        </div>` : ''}
+                        <div class="info-item">
+                            <label>データサイズ</label>
+                            <div class="value">${ext.data.length} bytes</div>
+                        </div>
+                    </div>
+                    <details class="raw-data">
+                        <summary>Raw Data</summary>
+                        <div class="hex-dump">${formatHexDump(ext.data)}</div>
+                    </details>
+                </div>`;
+            } else if (ext.type === 'Comment') {
+                html += `
+                <div class="extension-item">
+                    <h4>Comment Extension #${i + 1}</h4>
+                    <div class="comment-text">${escapeHtml(ext.data)}</div>
+                </div>`;
+            } else if (ext.type === 'PlainText') {
+                html += `
+                <div class="extension-item">
+                    <h4>Plain Text Extension #${i + 1}</h4>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <label>位置</label>
+                            <div class="value">(${ext.textGridLeft}, ${ext.textGridTop})</div>
+                        </div>
+                        <div class="info-item">
+                            <label>サイズ</label>
+                            <div class="value">${ext.textGridWidth} x ${ext.textGridHeight}</div>
+                        </div>
+                        <div class="info-item">
+                            <label>文字セルサイズ</label>
+                            <div class="value">${ext.charCellWidth} x ${ext.charCellHeight}</div>
+                        </div>
+                    </div>
+                    <div class="comment-text">${escapeHtml(ext.text)}</div>
+                </div>`;
+            }
+        });
+
+        html += `</div></div>`;
+    }
+
+    // Frames Detail
+    html += `
+    <div class="section">
+        <h2>フレーム詳細</h2>
+        <div class="frames-container" id="framesContainer">
+        </div>
+    </div>`;
+
+    results.innerHTML = html;
+
+    renderFrames(gif);
+    setupAnimation(gif);
+}
+
+function renderFrames(gif) {
+    const container = document.getElementById('framesContainer');
+    const lsd = gif.logicalScreenDescriptor;
+
+    gif.frames.forEach((frame, index) => {
+        const frameDiv = document.createElement('div');
+        frameDiv.className = 'frame-card';
+
+        const canvas = document.createElement('canvas');
+        canvas.width = frame.descriptor.width;
+        canvas.height = frame.descriptor.height;
+        canvas.className = 'frame-canvas';
+
+        const ctx = canvas.getContext('2d');
+        const imageData = new ImageData(frame.pixels, frame.descriptor.width, frame.descriptor.height);
+        ctx.putImageData(imageData, 0, 0);
+
+        const gce = frame.graphicsControl;
+
+        let frameHtml = `
+            <h4>Frame #${index + 1}</h4>
+            <div class="frame-preview">
+                <div class="canvas-container"></div>
+                <div class="frame-info">
+                    <div><span class="label">位置:</span> <span class="val">(${frame.descriptor.left}, ${frame.descriptor.top})</span></div>
+                    <div><span class="label">サイズ:</span> <span class="val">${frame.descriptor.width} x ${frame.descriptor.height} px</span></div>
+                    <div><span class="label">インターレース:</span> <span class="val">${frame.descriptor.interlaceFlag ? 'Yes' : 'No'}</span></div>
+                    <div><span class="label">ローカルカラーテーブル:</span> <span class="val">${frame.descriptor.localColorTableFlag ? frame.descriptor.localColorTableSize + '色' : 'なし'}</span></div>
+                    <div><span class="label">LZW最小コードサイズ:</span> <span class="val">${frame.lzwMinCodeSize}</span></div>
+                    <div><span class="label">圧縮データサイズ:</span> <span class="val">${formatBytes(frame.compressedDataSize)}</span></div>
+                    ${gce ? `
+                    <div><span class="label">待ち時間:</span> <span class="val">${gce.delayTime} (${gce.delayTimeMs}ms)</span></div>
+                    <div><span class="label">Disposal:</span> <span class="val">${gce.disposalMethod} - ${gce.disposalMethodName}</span></div>
+                    <div><span class="label">透過色:</span> <span class="val">${gce.transparentColorFlag ? 'Index ' + gce.transparentColorIndex : 'なし'}</span></div>
+                    <div><span class="label">ユーザー入力:</span> <span class="val">${gce.userInputFlag ? 'Yes' : 'No'}</span></div>
+                    ` : '<div><span class="label">GCE:</span> <span class="val">なし</span></div>'}
+                </div>
+            </div>
+        `;
+
+        if (frame.localColorTable) {
+            frameHtml += `
+            <h4 style="margin-top:15px;">ローカルカラーテーブル (${frame.localColorTable.length}色)</h4>
+            <div class="color-palette" style="max-height:100px;">
+                ${frame.localColorTable.map((c, i) =>
+                    `<div class="color-swatch" style="background:rgb(${c.r},${c.g},${c.b})" data-info="#${i}: RGB(${c.r},${c.g},${c.b})"></div>`
+                ).join('')}
+            </div>`;
+        }
+
+        frameDiv.innerHTML = frameHtml;
+        frameDiv.querySelector('.canvas-container').appendChild(canvas);
+        container.appendChild(frameDiv);
+    });
+}
+
+let animationId = null;
+let currentFrame = 0;
+let gifData = null;
+let compositeCanvas = null;
+let compositeCtx = null;
+let previousImageData = null;
+
+function setupAnimation(gif) {
+    gifData = gif;
+    currentFrame = 0;
+
+    compositeCanvas = document.getElementById('previewCanvas');
+    compositeCtx = compositeCanvas.getContext('2d');
+
+    clearCanvas();
+    drawFrame(0);
+}
+
+function clearCanvas() {
+    const lsd = gifData.logicalScreenDescriptor;
+    if (gifData.globalColorTable && lsd.backgroundColorIndex < gifData.globalColorTable.length) {
+        const bgColor = gifData.globalColorTable[lsd.backgroundColorIndex];
+        compositeCtx.fillStyle = `rgb(${bgColor.r},${bgColor.g},${bgColor.b})`;
+        compositeCtx.fillRect(0, 0, lsd.width, lsd.height);
+    } else {
+        compositeCtx.clearRect(0, 0, lsd.width, lsd.height);
+    }
+}
+
+function drawFrame(index) {
+    const frame = gifData.frames[index];
+    const gce = frame.graphicsControl;
+
+    if (index > 0 && gifData.frames[index - 1].graphicsControl) {
+        const prevGce = gifData.frames[index - 1].graphicsControl;
+        const prevFrame = gifData.frames[index - 1];
+
+        switch (prevGce.disposalMethod) {
+            case 2:
+                compositeCtx.clearRect(
+                    prevFrame.descriptor.left, prevFrame.descriptor.top,
+                    prevFrame.descriptor.width, prevFrame.descriptor.height
+                );
+                break;
+            case 3:
+                if (previousImageData) {
+                    compositeCtx.putImageData(previousImageData, 0, 0);
+                }
+                break;
+        }
+    }
+
+    if (gce && gce.disposalMethod === 3) {
+        previousImageData = compositeCtx.getImageData(
+            0, 0,
+            gifData.logicalScreenDescriptor.width,
+            gifData.logicalScreenDescriptor.height
+        );
+    }
+
+    const imageData = new ImageData(
+        new Uint8ClampedArray(frame.pixels),
+        frame.descriptor.width,
+        frame.descriptor.height
+    );
+
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = frame.descriptor.width;
+    tempCanvas.height = frame.descriptor.height;
+    const tempCtx = tempCanvas.getContext('2d');
+    tempCtx.putImageData(imageData, 0, 0);
+
+    compositeCtx.drawImage(
+        tempCanvas,
+        frame.descriptor.left,
+        frame.descriptor.top
+    );
+
+    const counter = document.getElementById('frameCounter');
+    if (counter) {
+        counter.textContent = `フレーム: ${index + 1} / ${gifData.frames.length}`;
+    }
+}
+
+function playAnimation() {
+    if (animationId) return;
+    if (gifData.frames.length <= 1) return;
+
+    function animate() {
+        const frame = gifData.frames[currentFrame];
+        const delay = frame.graphicsControl?.delayTimeMs || 100;
+
+        animationId = setTimeout(() => {
+            currentFrame = (currentFrame + 1) % gifData.frames.length;
+            if (currentFrame === 0) {
+                clearCanvas();
+            }
+            drawFrame(currentFrame);
+            animate();
+        }, delay);
+    }
+
+    animate();
+}
+
+function pauseAnimation() {
+    if (animationId) {
+        clearTimeout(animationId);
+        animationId = null;
+    }
+}
+
+function stepFrame(delta) {
+    pauseAnimation();
+    currentFrame = (currentFrame + delta + gifData.frames.length) % gifData.frames.length;
+    if (currentFrame === 0) {
+        clearCanvas();
+    }
+    drawFrame(currentFrame);
+}
+
+// Utility functions
+function formatBytes(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(2) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+}
+
+function formatBinary(byte) {
+    return byte.toString(2).padStart(8, '0');
+}
+
+function toHex(n) {
+    return n.toString(16).padStart(2, '0').toUpperCase();
+}
+
+function formatHexDump(data) {
+    let result = '';
+    for (let i = 0; i < data.length; i += 16) {
+        const hex = [];
+        const ascii = [];
+        for (let j = 0; j < 16 && i + j < data.length; j++) {
+            const byte = data[i + j];
+            hex.push(toHex(byte));
+            ascii.push(byte >= 32 && byte < 127 ? String.fromCharCode(byte) : '.');
+        }
+        const offset = i.toString(16).padStart(8, '0').toUpperCase();
+        result += `${offset}  ${hex.join(' ').padEnd(48)}  ${ascii.join('')}\n`;
+    }
+    return result;
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function calculateTotalDuration(frames) {
+    return frames.reduce((sum, f) => sum + (f.graphicsControl?.delayTimeMs || 100), 0);
+}
+
+function calculateFPS(frames) {
+    const totalMs = calculateTotalDuration(frames);
+    if (totalMs === 0) return 0;
+    return (frames.length / totalMs) * 1000;
+}
+</script>
