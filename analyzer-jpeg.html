@@ -1,0 +1,1210 @@
+---
+layout: post
+title: JPEG Analyzer
+---
+
+<nav>
+    <a href="analyzer-gif.html">GIF</a> |
+    <strong>JPEG</strong> |
+    <a href="analyzer-png.html">PNG</a> |
+    <a href="analyzer-webp.html">WebP</a>
+</nav>
+
+<style>
+    .drop-zone {
+        border: 2px dashed #999;
+        padding: 40px;
+        text-align: center;
+        margin: 20px auto;
+        max-width: 600px;
+        cursor: pointer;
+    }
+    .drop-zone:hover, .drop-zone.dragover {
+        border-color: #333;
+        background: #f5f5f5;
+    }
+    .drop-zone p {
+        color: #666;
+    }
+    #fileInput {
+        display: none;
+    }
+    .results {
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+    .section {
+        border: 1px solid #ddd;
+        padding: 20px;
+        margin: 20px 0;
+    }
+    .section h2 {
+        border-bottom: 1px solid #ddd;
+        padding-bottom: 10px;
+        margin-bottom: 15px;
+    }
+    .section h3 {
+        margin: 15px 0 10px 0;
+    }
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 10px;
+    }
+    .info-item {
+        background: #f9f9f9;
+        padding: 10px;
+        border: 1px solid #eee;
+    }
+    .info-item label {
+        color: #666;
+        font-size: 0.85em;
+        display: block;
+        margin-bottom: 4px;
+    }
+    .info-item .value {
+        font-weight: bold;
+        font-family: monospace;
+    }
+    .segment-item {
+        border: 1px solid #ddd;
+        padding: 12px;
+        margin: 10px 0;
+    }
+    .segment-item.critical {
+        border-left: 3px solid #666;
+    }
+    .segment-item h4 {
+        margin-bottom: 8px;
+    }
+    .hex-dump {
+        font-family: monospace;
+        font-size: 12px;
+        background: #f5f5f5;
+        padding: 15px;
+        border: 1px solid #ddd;
+        overflow-x: auto;
+        max-height: 200px;
+        overflow-y: auto;
+        white-space: pre;
+    }
+    .preview-section {
+        text-align: center;
+        padding: 20px;
+    }
+    #staticPreview {
+        border: 1px solid #ccc;
+        background: #f9f9f9;
+        max-width: 100%;
+    }
+    .raw-data {
+        margin-top: 10px;
+    }
+    .raw-data summary {
+        cursor: pointer;
+        padding: 8px;
+        background: #f5f5f5;
+        border: 1px solid #ddd;
+    }
+    .loading {
+        text-align: center;
+        padding: 40px;
+        color: #666;
+    }
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+    }
+    th, td {
+        padding: 8px 12px;
+        text-align: left;
+        border-bottom: 1px solid #ddd;
+    }
+    th {
+        background: #f5f5f5;
+    }
+    td {
+        font-family: monospace;
+    }
+    .qt-table {
+        display: grid;
+        grid-template-columns: repeat(8, 1fr);
+        gap: 2px;
+        margin-top: 10px;
+        max-width: 400px;
+    }
+    .qt-cell {
+        background: #f0f0f0;
+        padding: 4px;
+        text-align: center;
+        font-family: monospace;
+        font-size: 11px;
+        border: 1px solid #ddd;
+    }
+    .ht-table {
+        margin-top: 10px;
+    }
+    .exif-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 10px;
+        margin-top: 10px;
+    }
+</style>
+
+<h1>JPEG Analyzer</h1>
+
+<div class="drop-zone" id="dropZone">
+    <p>JPEGファイルをここにドラッグ＆ドロップ<br>または クリックして選択</p>
+    <input type="file" id="fileInput" accept=".jpg,.jpeg,.JPG,.JPEG,image/jpeg">
+</div>
+
+<div class="results" id="results"></div>
+
+<script>
+// JPEG Parser Class
+class JPEGParser {
+    constructor(buffer) {
+        this.buffer = buffer;
+        this.view = new DataView(buffer);
+        this.uint8 = new Uint8Array(buffer);
+        this.pos = 0;
+        this.segments = [];
+        this.sofData = null;
+        this.jfif = null;
+        this.exifData = null;
+        this.quantizationTables = [];
+        this.huffmanTables = [];
+        this.comments = [];
+        this.appSegments = [];
+    }
+
+    readByte() {
+        return this.uint8[this.pos++];
+    }
+
+    readBytes(n) {
+        const bytes = this.uint8.slice(this.pos, this.pos + n);
+        this.pos += n;
+        return bytes;
+    }
+
+    readUint16BE() {
+        const val = this.view.getUint16(this.pos, false);
+        this.pos += 2;
+        return val;
+    }
+
+    readUint32BE() {
+        const val = this.view.getUint32(this.pos, false);
+        this.pos += 4;
+        return val;
+    }
+
+    readString(n) {
+        let str = '';
+        for (let i = 0; i < n; i++) {
+            const b = this.readByte();
+            if (b === 0) { this.pos += n - i - 1; break; }
+            str += String.fromCharCode(b);
+        }
+        return str;
+    }
+
+    parse() {
+        // SOI
+        const soi1 = this.readByte();
+        const soi2 = this.readByte();
+        if (soi1 !== 0xFF || soi2 !== 0xD8) {
+            throw new Error('Not a valid JPEG file (SOI marker not found)');
+        }
+
+        this.segments.push({
+            marker: 0xFFD8, name: 'SOI',
+            description: 'Start of Image',
+            offset: 0, length: 2
+        });
+
+        while (this.pos < this.buffer.byteLength) {
+            if (this.readByte() !== 0xFF) continue;
+
+            let markerByte = this.readByte();
+            // skip padding FF bytes
+            while (markerByte === 0xFF && this.pos < this.buffer.byteLength) {
+                markerByte = this.readByte();
+            }
+
+            const marker = 0xFF00 | markerByte;
+            const markerOffset = this.pos - 2;
+
+            if (markerByte === 0xD9) {
+                // EOI
+                this.segments.push({
+                    marker, name: 'EOI',
+                    description: 'End of Image',
+                    offset: markerOffset, length: 2
+                });
+                break;
+            }
+
+            if (markerByte === 0x00) continue; // stuffed byte
+            if (markerByte >= 0xD0 && markerByte <= 0xD7) {
+                // RST markers (no length)
+                this.segments.push({
+                    marker, name: `RST${markerByte - 0xD0}`,
+                    description: `Restart Marker ${markerByte - 0xD0}`,
+                    offset: markerOffset, length: 2
+                });
+                continue;
+            }
+
+            // Segments with length
+            const segLength = this.readUint16BE();
+            const segDataStart = this.pos;
+            const segDataLen = segLength - 2;
+
+            const segInfo = {
+                marker, name: getMarkerName(markerByte),
+                description: getMarkerDescription(markerByte),
+                offset: markerOffset,
+                length: segLength + 2,
+                dataLength: segDataLen
+            };
+
+            // Parse specific segments
+            if (markerByte === 0xE0) {
+                this.parseAPP0(segDataStart, segDataLen);
+            } else if (markerByte === 0xE1) {
+                this.parseAPP1(segDataStart, segDataLen);
+            } else if (markerByte >= 0xE2 && markerByte <= 0xEF) {
+                this.parseAPPn(markerByte, segDataStart, segDataLen);
+            } else if (markerByte >= 0xC0 && markerByte <= 0xC3 || markerByte >= 0xC5 && markerByte <= 0xC7 ||
+                       markerByte >= 0xC9 && markerByte <= 0xCB || markerByte >= 0xCD && markerByte <= 0xCF) {
+                this.parseSOF(markerByte, segDataStart, segDataLen);
+            } else if (markerByte === 0xDB) {
+                this.parseDQT(segDataStart, segDataLen);
+            } else if (markerByte === 0xC4) {
+                this.parseDHT(segDataStart, segDataLen);
+            } else if (markerByte === 0xDA) {
+                this.parseSOS(segDataStart, segDataLen);
+                segInfo.scanDataFollows = true;
+            } else if (markerByte === 0xFE) {
+                this.parseCOM(segDataStart, segDataLen);
+            } else if (markerByte === 0xDD) {
+                this.parseDRI(segDataStart);
+            }
+
+            this.segments.push(segInfo);
+
+            this.pos = segDataStart + segDataLen;
+
+            // After SOS, skip scan data until next marker
+            if (markerByte === 0xDA) {
+                this.skipScanData();
+            }
+        }
+
+        return this;
+    }
+
+    skipScanData() {
+        while (this.pos < this.buffer.byteLength - 1) {
+            if (this.uint8[this.pos] === 0xFF && this.uint8[this.pos + 1] !== 0x00) {
+                if (this.uint8[this.pos + 1] >= 0xD0 && this.uint8[this.pos + 1] <= 0xD7) {
+                    this.pos += 2;
+                    continue;
+                }
+                break;
+            }
+            this.pos++;
+        }
+    }
+
+    parseAPP0(start, len) {
+        const savedPos = this.pos;
+        this.pos = start;
+
+        const identifier = this.readString(5);
+        if (identifier === 'JFIF') {
+            const versionMajor = this.readByte();
+            const versionMinor = this.readByte();
+            const densityUnits = this.readByte();
+            const xDensity = this.readUint16BE();
+            const yDensity = this.readUint16BE();
+            const thumbnailWidth = this.readByte();
+            const thumbnailHeight = this.readByte();
+
+            const unitNames = { 0: 'なし (アスペクト比)', 1: 'dots/inch', 2: 'dots/cm' };
+
+            this.jfif = {
+                identifier,
+                version: `${versionMajor}.${String(versionMinor).padStart(2, '0')}`,
+                versionMajor, versionMinor,
+                densityUnits, densityUnitName: unitNames[densityUnits] || 'Unknown',
+                xDensity, yDensity,
+                thumbnailWidth, thumbnailHeight
+            };
+        }
+
+        this.pos = savedPos;
+    }
+
+    parseAPP1(start, len) {
+        const savedPos = this.pos;
+        this.pos = start;
+
+        const data = this.uint8.slice(start, start + len);
+
+        // Check for Exif
+        if (len >= 6 && data[0] === 0x45 && data[1] === 0x78 &&
+            data[2] === 0x69 && data[3] === 0x66 && data[4] === 0x00 && data[5] === 0x00) {
+            this.parseExif(start + 6, len - 6);
+        }
+        // Check for XMP
+        else if (len > 29) {
+            const header = String.fromCharCode(...data.slice(0, 28));
+            if (header.startsWith('http://ns.adobe.com/xap/1.0/')) {
+                const nullEnd = data.indexOf(0);
+                if (nullEnd > 0 && nullEnd < len) {
+                    try {
+                        this.xmpData = new TextDecoder('utf-8').decode(data.slice(nullEnd + 1));
+                    } catch {
+                        this.xmpData = String.fromCharCode(...data.slice(nullEnd + 1));
+                    }
+                }
+            }
+        }
+
+        this.appSegments.push({ marker: 0xE1, name: 'APP1', data, offset: start });
+        this.pos = savedPos;
+    }
+
+    parseExif(start, len) {
+        const tiffStart = start;
+        const data = this.uint8;
+
+        // TIFF header: byte order
+        const byteOrder = (data[tiffStart] << 8) | data[tiffStart + 1];
+        const littleEndian = byteOrder === 0x4949; // 'II'
+
+        const readU16 = (offset) => {
+            if (littleEndian) return data[offset] | (data[offset + 1] << 8);
+            return (data[offset] << 8) | data[offset + 1];
+        };
+        const readU32 = (offset) => {
+            if (littleEndian)
+                return data[offset] | (data[offset + 1] << 8) | (data[offset + 2] << 16) | (data[offset + 3] << 24);
+            return (data[offset] << 24) | (data[offset + 1] << 16) | (data[offset + 2] << 8) | data[offset + 3];
+        };
+        const readS32 = (offset) => {
+            const val = readU32(offset);
+            return val > 0x7FFFFFFF ? val - 0x100000000 : val;
+        };
+
+        const magic = readU16(tiffStart + 2);
+        if (magic !== 42) {
+            this.exifData = { error: 'Invalid TIFF magic number', byteOrder: littleEndian ? 'Little Endian (Intel)' : 'Big Endian (Motorola)' };
+            return;
+        }
+
+        const ifdOffset = readU32(tiffStart + 4);
+
+        const readIFD = (offset) => {
+            const absOffset = tiffStart + offset;
+            if (absOffset + 2 > data.length) return [];
+            const count = readU16(absOffset);
+            const entries = [];
+
+            for (let i = 0; i < count; i++) {
+                const entryOffset = absOffset + 2 + i * 12;
+                if (entryOffset + 12 > data.length) break;
+
+                const tag = readU16(entryOffset);
+                const type = readU16(entryOffset + 2);
+                const countVal = readU32(entryOffset + 4);
+                const valueOffset = entryOffset + 8;
+
+                const typeSizes = { 1: 1, 2: 1, 3: 2, 4: 4, 5: 8, 7: 1, 9: 4, 10: 8 };
+                const typeSize = typeSizes[type] || 1;
+                const totalSize = typeSize * countVal;
+
+                let dataOffset = valueOffset;
+                if (totalSize > 4) {
+                    dataOffset = tiffStart + readU32(valueOffset);
+                }
+
+                let value;
+                if (type === 2) {
+                    // ASCII string
+                    let str = '';
+                    for (let j = 0; j < countVal - 1 && dataOffset + j < data.length; j++) {
+                        str += String.fromCharCode(data[dataOffset + j]);
+                    }
+                    value = str;
+                } else if (type === 3) {
+                    // SHORT
+                    value = countVal === 1 ? readU16(dataOffset) : [];
+                    if (Array.isArray(value)) {
+                        for (let j = 0; j < countVal && j < 10; j++) {
+                            value.push(readU16(dataOffset + j * 2));
+                        }
+                    }
+                } else if (type === 4) {
+                    // LONG
+                    value = countVal === 1 ? readU32(dataOffset) : [];
+                    if (Array.isArray(value)) {
+                        for (let j = 0; j < countVal && j < 10; j++) {
+                            value.push(readU32(dataOffset + j * 4));
+                        }
+                    }
+                } else if (type === 5) {
+                    // RATIONAL
+                    const num = readU32(dataOffset);
+                    const den = readU32(dataOffset + 4);
+                    value = { num, den, value: den !== 0 ? num / den : 0 };
+                } else if (type === 9) {
+                    // SLONG
+                    value = countVal === 1 ? readS32(dataOffset) : readS32(dataOffset);
+                } else if (type === 10) {
+                    // SRATIONAL
+                    const num = readS32(dataOffset);
+                    const den = readS32(dataOffset + 4);
+                    value = { num, den, value: den !== 0 ? num / den : 0 };
+                } else if (type === 1 || type === 7) {
+                    // BYTE / UNDEFINED
+                    if (countVal <= 4) {
+                        value = [];
+                        for (let j = 0; j < countVal; j++) value.push(data[dataOffset + j]);
+                    } else {
+                        value = `[${countVal} bytes]`;
+                    }
+                } else {
+                    value = readU32(dataOffset);
+                }
+
+                entries.push({ tag, type, count: countVal, value, tagName: getExifTagName(tag) });
+            }
+
+            return entries;
+        };
+
+        const ifd0 = readIFD(ifdOffset);
+
+        // Find ExifIFD pointer
+        let exifIFDEntries = [];
+        let gpsIFDEntries = [];
+        const exifIFDPointer = ifd0.find(e => e.tag === 0x8769);
+        if (exifIFDPointer) {
+            exifIFDEntries = readIFD(exifIFDPointer.value);
+        }
+        const gpsIFDPointer = ifd0.find(e => e.tag === 0x8825);
+        if (gpsIFDPointer) {
+            gpsIFDEntries = readIFD(gpsIFDPointer.value);
+        }
+
+        this.exifData = {
+            byteOrder: littleEndian ? 'Little Endian (Intel)' : 'Big Endian (Motorola)',
+            ifd0, exifIFD: exifIFDEntries, gpsIFD: gpsIFDEntries
+        };
+    }
+
+    parseAPPn(markerByte, start, len) {
+        const data = this.uint8.slice(start, start + len);
+        const n = markerByte - 0xE0;
+
+        let identifier = '';
+        for (let i = 0; i < Math.min(len, 20); i++) {
+            if (data[i] === 0) break;
+            identifier += String.fromCharCode(data[i]);
+        }
+
+        this.appSegments.push({ marker: 0xFF00 | markerByte, name: `APP${n}`, identifier, data, offset: start });
+    }
+
+    parseSOF(markerByte, start, len) {
+        const savedPos = this.pos;
+        this.pos = start;
+
+        const precision = this.readByte();
+        const height = this.readUint16BE();
+        const width = this.readUint16BE();
+        const numComponents = this.readByte();
+
+        const sofTypes = {
+            0xC0: 'Baseline DCT',
+            0xC1: 'Extended Sequential DCT',
+            0xC2: 'Progressive DCT',
+            0xC3: 'Lossless (Sequential)',
+            0xC5: 'Differential Sequential DCT',
+            0xC6: 'Differential Progressive DCT',
+            0xC7: 'Differential Lossless',
+            0xC9: 'Extended Sequential DCT (Arithmetic)',
+            0xCA: 'Progressive DCT (Arithmetic)',
+            0xCB: 'Lossless (Arithmetic)',
+            0xCD: 'Differential Sequential DCT (Arithmetic)',
+            0xCE: 'Differential Progressive DCT (Arithmetic)',
+            0xCF: 'Differential Lossless (Arithmetic)'
+        };
+
+        const components = [];
+        for (let i = 0; i < numComponents; i++) {
+            const id = this.readByte();
+            const sampling = this.readByte();
+            const qtId = this.readByte();
+            const componentNames = { 1: 'Y (輝度)', 2: 'Cb (色差青)', 3: 'Cr (色差赤)', 4: 'I', 5: 'Q' };
+
+            components.push({
+                id,
+                name: componentNames[id] || `Component ${id}`,
+                horizontalSampling: (sampling >> 4) & 0x0F,
+                verticalSampling: sampling & 0x0F,
+                quantizationTableId: qtId
+            });
+        }
+
+        // Determine chroma subsampling
+        let subsampling = 'Unknown';
+        if (numComponents === 3) {
+            const h0 = components[0].horizontalSampling;
+            const v0 = components[0].verticalSampling;
+            const h1 = components[1].horizontalSampling;
+            const v1 = components[1].verticalSampling;
+            if (h0 === 1 && v0 === 1 && h1 === 1 && v1 === 1) subsampling = '4:4:4 (No subsampling)';
+            else if (h0 === 2 && v0 === 1 && h1 === 1 && v1 === 1) subsampling = '4:2:2';
+            else if (h0 === 2 && v0 === 2 && h1 === 1 && v1 === 1) subsampling = '4:2:0';
+            else if (h0 === 4 && v0 === 1 && h1 === 1 && v1 === 1) subsampling = '4:1:1';
+            else if (h0 === 1 && v0 === 2 && h1 === 1 && v1 === 1) subsampling = '4:4:0';
+            else subsampling = `${h0}x${v0} / ${h1}x${v1}`;
+        } else if (numComponents === 1) {
+            subsampling = 'Grayscale';
+        }
+
+        this.sofData = {
+            marker: markerByte,
+            sofType: sofTypes[markerByte] || 'Unknown',
+            precision, width, height,
+            numComponents, components,
+            subsampling
+        };
+
+        this.pos = savedPos;
+    }
+
+    parseDQT(start, len) {
+        const savedPos = this.pos;
+        this.pos = start;
+        const end = start + len;
+
+        while (this.pos < end) {
+            const info = this.readByte();
+            const precision = (info >> 4) & 0x0F;
+            const tableId = info & 0x0F;
+            const valueSize = precision === 0 ? 1 : 2;
+            const values = [];
+
+            for (let i = 0; i < 64; i++) {
+                if (precision === 0) {
+                    values.push(this.readByte());
+                } else {
+                    values.push(this.readUint16BE());
+                }
+            }
+
+            this.quantizationTables.push({
+                tableId, precision,
+                precisionBits: precision === 0 ? 8 : 16,
+                values
+            });
+        }
+
+        this.pos = savedPos;
+    }
+
+    parseDHT(start, len) {
+        const savedPos = this.pos;
+        this.pos = start;
+        const end = start + len;
+
+        while (this.pos < end) {
+            const info = this.readByte();
+            const tableClass = (info >> 4) & 0x0F;
+            const tableId = info & 0x0F;
+            const counts = [];
+            let totalCodes = 0;
+
+            for (let i = 0; i < 16; i++) {
+                const count = this.readByte();
+                counts.push(count);
+                totalCodes += count;
+            }
+
+            const symbols = [];
+            for (let i = 0; i < totalCodes; i++) {
+                symbols.push(this.readByte());
+            }
+
+            this.huffmanTables.push({
+                tableClass,
+                tableClassName: tableClass === 0 ? 'DC' : 'AC',
+                tableId,
+                counts,
+                totalCodes,
+                symbols
+            });
+        }
+
+        this.pos = savedPos;
+    }
+
+    parseSOS(start, len) {
+        const savedPos = this.pos;
+        this.pos = start;
+
+        const numComponents = this.readByte();
+        const components = [];
+        for (let i = 0; i < numComponents; i++) {
+            const id = this.readByte();
+            const tables = this.readByte();
+            components.push({
+                id,
+                dcTableId: (tables >> 4) & 0x0F,
+                acTableId: tables & 0x0F
+            });
+        }
+
+        const spectralStart = this.readByte();
+        const spectralEnd = this.readByte();
+        const approx = this.readByte();
+
+        this.sosData = {
+            numComponents, components,
+            spectralStart, spectralEnd,
+            successiveApproxHigh: (approx >> 4) & 0x0F,
+            successiveApproxLow: approx & 0x0F
+        };
+
+        this.pos = savedPos;
+    }
+
+    parseCOM(start, len) {
+        const data = this.uint8.slice(start, start + len);
+        let text;
+        try {
+            text = new TextDecoder('utf-8').decode(data);
+        } catch {
+            text = String.fromCharCode(...data);
+        }
+        this.comments.push(text);
+    }
+
+    parseDRI(start) {
+        const savedPos = this.pos;
+        this.pos = start;
+        this.restartInterval = this.readUint16BE();
+        this.pos = savedPos;
+    }
+}
+
+// Marker name/description lookup
+function getMarkerName(byte) {
+    const names = {
+        0xC0: 'SOF0', 0xC1: 'SOF1', 0xC2: 'SOF2', 0xC3: 'SOF3',
+        0xC4: 'DHT', 0xC5: 'SOF5', 0xC6: 'SOF6', 0xC7: 'SOF7',
+        0xC8: 'JPG', 0xC9: 'SOF9', 0xCA: 'SOF10', 0xCB: 'SOF11',
+        0xCC: 'DAC', 0xCD: 'SOF13', 0xCE: 'SOF14', 0xCF: 'SOF15',
+        0xD8: 'SOI', 0xD9: 'EOI', 0xDA: 'SOS', 0xDB: 'DQT',
+        0xDC: 'DNL', 0xDD: 'DRI', 0xDE: 'DHP', 0xDF: 'EXP',
+        0xE0: 'APP0', 0xE1: 'APP1', 0xE2: 'APP2', 0xE3: 'APP3',
+        0xE4: 'APP4', 0xE5: 'APP5', 0xE6: 'APP6', 0xE7: 'APP7',
+        0xE8: 'APP8', 0xE9: 'APP9', 0xEA: 'APP10', 0xEB: 'APP11',
+        0xEC: 'APP12', 0xED: 'APP13', 0xEE: 'APP14', 0xEF: 'APP15',
+        0xFE: 'COM'
+    };
+    return names[byte] || `0x${byte.toString(16).toUpperCase()}`;
+}
+
+function getMarkerDescription(byte) {
+    const descs = {
+        0xC0: 'Baseline DCTフレーム', 0xC1: '拡張シーケンシャルDCTフレーム',
+        0xC2: 'プログレッシブDCTフレーム', 0xC3: 'ロスレスフレーム',
+        0xC4: 'ハフマンテーブル定義', 0xC5: '差分シーケンシャルDCT',
+        0xC6: '差分プログレッシブDCT', 0xC7: '差分ロスレス',
+        0xC9: '拡張シーケンシャルDCT (算術)', 0xCA: 'プログレッシブDCT (算術)',
+        0xCB: 'ロスレス (算術)',
+        0xD8: 'Start of Image', 0xD9: 'End of Image',
+        0xDA: 'スキャン開始', 0xDB: '量子化テーブル定義',
+        0xDC: 'ライン数定義', 0xDD: 'リスタート間隔定義',
+        0xE0: 'JFIF/JFXX', 0xE1: 'EXIF/XMP',
+        0xE2: 'ICC Profile', 0xED: 'IPTC/Photoshop',
+        0xEE: 'Adobe', 0xFE: 'コメント'
+    };
+    if (byte >= 0xE0 && byte <= 0xEF && !descs[byte]) return `アプリケーションデータ ${byte - 0xE0}`;
+    return descs[byte] || '不明';
+}
+
+function getExifTagName(tag) {
+    const tags = {
+        0x010E: 'ImageDescription', 0x010F: 'Make', 0x0110: 'Model',
+        0x0112: 'Orientation', 0x011A: 'XResolution', 0x011B: 'YResolution',
+        0x0128: 'ResolutionUnit', 0x0131: 'Software', 0x0132: 'DateTime',
+        0x013B: 'Artist', 0x0213: 'YCbCrPositioning',
+        0x8298: 'Copyright', 0x8769: 'ExifIFDPointer', 0x8825: 'GPSInfoIFDPointer',
+        // Exif IFD
+        0x829A: 'ExposureTime', 0x829D: 'FNumber', 0x8822: 'ExposureProgram',
+        0x8827: 'ISOSpeedRatings', 0x9000: 'ExifVersion',
+        0x9003: 'DateTimeOriginal', 0x9004: 'DateTimeDigitized',
+        0x9101: 'ComponentsConfiguration', 0x9102: 'CompressedBitsPerPixel',
+        0x9201: 'ShutterSpeedValue', 0x9202: 'ApertureValue',
+        0x9203: 'BrightnessValue', 0x9204: 'ExposureBiasValue',
+        0x9205: 'MaxApertureValue', 0x9206: 'SubjectDistance',
+        0x9207: 'MeteringMode', 0x9208: 'LightSource', 0x9209: 'Flash',
+        0x920A: 'FocalLength', 0x927C: 'MakerNote', 0x9286: 'UserComment',
+        0xA000: 'FlashPixVersion', 0xA001: 'ColorSpace',
+        0xA002: 'PixelXDimension', 0xA003: 'PixelYDimension',
+        0xA005: 'InteroperabilityIFDPointer',
+        0xA20E: 'FocalPlaneXResolution', 0xA20F: 'FocalPlaneYResolution',
+        0xA210: 'FocalPlaneResolutionUnit', 0xA217: 'SensingMethod',
+        0xA300: 'FileSource', 0xA301: 'SceneType',
+        0xA401: 'CustomRendered', 0xA402: 'ExposureMode',
+        0xA403: 'WhiteBalance', 0xA404: 'DigitalZoomRatio',
+        0xA405: 'FocalLengthIn35mmFilm', 0xA406: 'SceneCaptureType',
+        0xA420: 'ImageUniqueID',
+        0xA431: 'BodySerialNumber', 0xA432: 'LensSpecification',
+        0xA433: 'LensMake', 0xA434: 'LensModel',
+        // GPS
+        0x0000: 'GPSVersionID', 0x0001: 'GPSLatitudeRef', 0x0002: 'GPSLatitude',
+        0x0003: 'GPSLongitudeRef', 0x0004: 'GPSLongitude',
+        0x0005: 'GPSAltitudeRef', 0x0006: 'GPSAltitude',
+        0x0007: 'GPSTimeStamp', 0x001D: 'GPSDateStamp'
+    };
+    return tags[tag] || `Tag 0x${tag.toString(16).toUpperCase()}`;
+}
+
+// UI
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+const results = document.getElementById('results');
+
+dropZone.addEventListener('click', () => fileInput.click());
+dropZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropZone.classList.add('dragover');
+});
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+    const file = e.dataTransfer.files[0];
+    if (file) processFile(file);
+});
+fileInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (file) processFile(file);
+});
+
+function processFile(file) {
+    results.innerHTML = '<div class="loading">解析中...</div>';
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        try {
+            const parser = new JPEGParser(e.target.result);
+            const jpeg = parser.parse();
+            displayResults(jpeg, file, e.target.result);
+        } catch (err) {
+            results.innerHTML = `<div class="section"><h2>エラー</h2><p>${err.message}</p></div>`;
+            console.error(err);
+        }
+    };
+    reader.readAsArrayBuffer(file);
+}
+
+function displayResults(jpeg, file, arrayBuffer) {
+    let html = '';
+
+    // File Info
+    html += `
+    <div class="section">
+        <h2>ファイル情報</h2>
+        <div class="info-grid">
+            <div class="info-item">
+                <label>ファイル名</label>
+                <div class="value">${escapeHtml(file.name)}</div>
+            </div>
+            <div class="info-item">
+                <label>ファイルサイズ</label>
+                <div class="value">${formatBytes(file.size)}</div>
+            </div>
+            <div class="info-item">
+                <label>MIMEタイプ</label>
+                <div class="value">${file.type || 'image/jpeg'}</div>
+            </div>
+            <div class="info-item">
+                <label>圧縮方式</label>
+                <div class="value">${jpeg.sofData ? jpeg.sofData.sofType : 'Unknown'}</div>
+            </div>
+            <div class="info-item">
+                <label>最終更新日</label>
+                <div class="value">${new Date(file.lastModified).toLocaleString()}</div>
+            </div>
+        </div>
+    </div>`;
+
+    // Preview
+    html += `
+    <div class="section">
+        <h2>画像プレビュー</h2>
+        <div class="preview-section">
+            <img id="staticPreview" alt="JPEG Preview">
+        </div>
+    </div>`;
+
+    // JFIF
+    if (jpeg.jfif) {
+        const jfif = jpeg.jfif;
+        html += `
+        <div class="section">
+            <h2>JFIF情報 (APP0)</h2>
+            <div class="info-grid">
+                <div class="info-item">
+                    <label>JFIF バージョン</label>
+                    <div class="value">${jfif.version}</div>
+                </div>
+                <div class="info-item">
+                    <label>密度単位</label>
+                    <div class="value">${jfif.densityUnits} - ${jfif.densityUnitName}</div>
+                </div>
+                <div class="info-item">
+                    <label>X密度</label>
+                    <div class="value">${jfif.xDensity}</div>
+                </div>
+                <div class="info-item">
+                    <label>Y密度</label>
+                    <div class="value">${jfif.yDensity}</div>
+                </div>
+                <div class="info-item">
+                    <label>サムネイルサイズ</label>
+                    <div class="value">${jfif.thumbnailWidth} x ${jfif.thumbnailHeight} px</div>
+                </div>
+            </div>
+        </div>`;
+    }
+
+    // SOF (Frame Header)
+    if (jpeg.sofData) {
+        const sof = jpeg.sofData;
+        html += `
+        <div class="section">
+            <h2>フレームヘッダー (${getMarkerName(sof.marker)})</h2>
+            <div class="info-grid">
+                <div class="info-item">
+                    <label>圧縮方式</label>
+                    <div class="value">${sof.sofType}</div>
+                </div>
+                <div class="info-item">
+                    <label>画像サイズ</label>
+                    <div class="value">${sof.width} x ${sof.height} px</div>
+                </div>
+                <div class="info-item">
+                    <label>サンプル精度</label>
+                    <div class="value">${sof.precision} bits</div>
+                </div>
+                <div class="info-item">
+                    <label>コンポーネント数</label>
+                    <div class="value">${sof.numComponents}</div>
+                </div>
+                <div class="info-item">
+                    <label>クロマサブサンプリング</label>
+                    <div class="value">${sof.subsampling}</div>
+                </div>
+            </div>
+
+            <h3>コンポーネント</h3>
+            <table>
+                <tr>
+                    <th>ID</th>
+                    <th>名前</th>
+                    <th>水平サンプリング</th>
+                    <th>垂直サンプリング</th>
+                    <th>量子化テーブルID</th>
+                </tr>
+                ${sof.components.map(c => `
+                <tr>
+                    <td>${c.id}</td>
+                    <td>${c.name}</td>
+                    <td>${c.horizontalSampling}</td>
+                    <td>${c.verticalSampling}</td>
+                    <td>${c.quantizationTableId}</td>
+                </tr>`).join('')}
+            </table>
+        </div>`;
+    }
+
+    // EXIF
+    if (jpeg.exifData && !jpeg.exifData.error) {
+        html += `
+        <div class="section">
+            <h2>EXIF情報 (APP1)</h2>
+            <div class="info-grid">
+                <div class="info-item">
+                    <label>バイトオーダー</label>
+                    <div class="value">${jpeg.exifData.byteOrder}</div>
+                </div>
+            </div>`;
+
+        if (jpeg.exifData.ifd0.length > 0) {
+            html += `
+            <h3>IFD0 (メイン画像)</h3>
+            <div class="exif-grid">
+                ${jpeg.exifData.ifd0.filter(e => e.tag !== 0x8769 && e.tag !== 0x8825).map(e => `
+                <div class="info-item">
+                    <label>${escapeHtml(e.tagName)} (0x${e.tag.toString(16).toUpperCase().padStart(4, '0')})</label>
+                    <div class="value">${formatExifValue(e)}</div>
+                </div>`).join('')}
+            </div>`;
+        }
+
+        if (jpeg.exifData.exifIFD.length > 0) {
+            html += `
+            <h3>Exif IFD</h3>
+            <div class="exif-grid">
+                ${jpeg.exifData.exifIFD.filter(e => e.tag !== 0x927C && e.tag !== 0xA005).map(e => `
+                <div class="info-item">
+                    <label>${escapeHtml(e.tagName)} (0x${e.tag.toString(16).toUpperCase().padStart(4, '0')})</label>
+                    <div class="value">${formatExifValue(e)}</div>
+                </div>`).join('')}
+            </div>`;
+        }
+
+        if (jpeg.exifData.gpsIFD.length > 0) {
+            html += `
+            <h3>GPS IFD</h3>
+            <div class="exif-grid">
+                ${jpeg.exifData.gpsIFD.map(e => `
+                <div class="info-item">
+                    <label>${escapeHtml(e.tagName)} (0x${e.tag.toString(16).toUpperCase().padStart(4, '0')})</label>
+                    <div class="value">${formatExifValue(e)}</div>
+                </div>`).join('')}
+            </div>`;
+        }
+
+        html += `</div>`;
+    }
+
+    // XMP
+    if (jpeg.xmpData) {
+        html += `
+        <div class="section">
+            <h2>XMPメタデータ</h2>
+            <details class="raw-data">
+                <summary>XMP Content</summary>
+                <div class="hex-dump" style="white-space:pre-wrap;">${escapeHtml(jpeg.xmpData.substring(0, 2000))}</div>
+            </details>
+        </div>`;
+    }
+
+    // Quantization Tables
+    if (jpeg.quantizationTables.length > 0) {
+        html += `
+        <div class="section">
+            <h2>量子化テーブル (DQT) - ${jpeg.quantizationTables.length}個</h2>`;
+
+        jpeg.quantizationTables.forEach(qt => {
+            html += `
+            <div class="segment-item">
+                <h4>テーブル #${qt.tableId} (精度: ${qt.precisionBits} bit)</h4>
+                <div class="qt-table">
+                    ${qt.values.map(v => `<div class="qt-cell">${v}</div>`).join('')}
+                </div>
+            </div>`;
+        });
+
+        html += `</div>`;
+    }
+
+    // Huffman Tables
+    if (jpeg.huffmanTables.length > 0) {
+        html += `
+        <div class="section">
+            <h2>ハフマンテーブル (DHT) - ${jpeg.huffmanTables.length}個</h2>`;
+
+        jpeg.huffmanTables.forEach(ht => {
+            html += `
+            <div class="segment-item">
+                <h4>${ht.tableClassName}テーブル #${ht.tableId} (コード数: ${ht.totalCodes})</h4>
+                <table class="ht-table">
+                    <tr><th>ビット長</th><th>コード数</th></tr>
+                    ${ht.counts.map((c, i) => c > 0 ? `<tr><td>${i + 1}</td><td>${c}</td></tr>` : '').join('')}
+                </table>
+            </div>`;
+        });
+
+        html += `</div>`;
+    }
+
+    // SOS
+    if (jpeg.sosData) {
+        const sos = jpeg.sosData;
+        html += `
+        <div class="section">
+            <h2>スキャンヘッダー (SOS)</h2>
+            <div class="info-grid">
+                <div class="info-item">
+                    <label>コンポーネント数</label>
+                    <div class="value">${sos.numComponents}</div>
+                </div>
+                <div class="info-item">
+                    <label>スペクトル選択</label>
+                    <div class="value">${sos.spectralStart} - ${sos.spectralEnd}</div>
+                </div>
+                <div class="info-item">
+                    <label>逐次近似</label>
+                    <div class="value">High: ${sos.successiveApproxHigh}, Low: ${sos.successiveApproxLow}</div>
+                </div>
+            </div>
+            <h3>スキャンコンポーネント</h3>
+            <table>
+                <tr>
+                    <th>コンポーネントID</th>
+                    <th>DCハフマンテーブル</th>
+                    <th>ACハフマンテーブル</th>
+                </tr>
+                ${sos.components.map(c => `
+                <tr>
+                    <td>${c.id}</td>
+                    <td>${c.dcTableId}</td>
+                    <td>${c.acTableId}</td>
+                </tr>`).join('')}
+            </table>
+        </div>`;
+    }
+
+    // Restart Interval
+    if (jpeg.restartInterval !== undefined) {
+        html += `
+        <div class="section">
+            <h2>リスタート間隔 (DRI)</h2>
+            <div class="info-grid">
+                <div class="info-item">
+                    <label>リスタート間隔</label>
+                    <div class="value">${jpeg.restartInterval} MCUs</div>
+                </div>
+            </div>
+        </div>`;
+    }
+
+    // Comments
+    if (jpeg.comments.length > 0) {
+        html += `
+        <div class="section">
+            <h2>コメント (COM)</h2>
+            ${jpeg.comments.map((c, i) => `
+            <div class="segment-item">
+                <h4>コメント #${i + 1}</h4>
+                <div class="hex-dump" style="white-space:pre-wrap;">${escapeHtml(c)}</div>
+            </div>`).join('')}
+        </div>`;
+    }
+
+    // APP Segments
+    const otherApps = jpeg.appSegments.filter(a =>
+        a.name !== 'APP0' && a.name !== 'APP1'
+    );
+    if (otherApps.length > 0) {
+        html += `
+        <div class="section">
+            <h2>その他のAPPセグメント</h2>
+            ${otherApps.map(a => `
+            <div class="segment-item">
+                <h4>${a.name}${a.identifier ? ' - ' + escapeHtml(a.identifier) : ''}</h4>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <label>データサイズ</label>
+                        <div class="value">${formatBytes(a.data.length)}</div>
+                    </div>
+                </div>
+                <details class="raw-data">
+                    <summary>Raw Data (先頭256バイト)</summary>
+                    <div class="hex-dump">${formatHexDump(a.data.slice(0, 256))}</div>
+                </details>
+            </div>`).join('')}
+        </div>`;
+    }
+
+    // All Segments
+    html += `
+    <div class="section">
+        <h2>セグメント一覧 (${jpeg.segments.length}個)</h2>
+        <table>
+            <tr>
+                <th>オフセット</th>
+                <th>マーカー</th>
+                <th>名前</th>
+                <th>サイズ</th>
+                <th>説明</th>
+            </tr>
+            ${jpeg.segments.map(s => `
+            <tr>
+                <td>0x${s.offset.toString(16).toUpperCase()}</td>
+                <td>0x${s.marker.toString(16).toUpperCase()}</td>
+                <td>${s.name}</td>
+                <td>${s.length !== undefined ? formatBytes(s.length) : '-'}</td>
+                <td>${s.description}</td>
+            </tr>`).join('')}
+        </table>
+    </div>`;
+
+    results.innerHTML = html;
+
+    // Show preview
+    const blob = new Blob([arrayBuffer], { type: 'image/jpeg' });
+    const url = URL.createObjectURL(blob);
+    const previewEl = document.getElementById('staticPreview');
+    if (previewEl) {
+        previewEl.src = url;
+    }
+}
+
+function formatExifValue(entry) {
+    const val = entry.value;
+    if (val === null || val === undefined) return 'N/A';
+    if (typeof val === 'string') return escapeHtml(val);
+    if (typeof val === 'object' && val.num !== undefined) {
+        return `${val.num}/${val.den} (${val.value.toFixed(6)})`;
+    }
+    if (Array.isArray(val)) {
+        return val.map(v => v.toString()).join(', ');
+    }
+    return String(val);
+}
+
+// Utility functions
+function formatBytes(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(2) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+}
+
+function formatHexDump(data) {
+    let result = '';
+    for (let i = 0; i < data.length; i += 16) {
+        const hex = [];
+        const ascii = [];
+        for (let j = 0; j < 16 && i + j < data.length; j++) {
+            const byte = data[i + j];
+            hex.push(byte.toString(16).toUpperCase().padStart(2, '0'));
+            ascii.push(byte >= 32 && byte < 127 ? String.fromCharCode(byte) : '.');
+        }
+        const offset = i.toString(16).padStart(8, '0').toUpperCase();
+        result += `${offset}  ${hex.join(' ').padEnd(48)}  ${ascii.join('')}\n`;
+    }
+    return result;
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+</script>
