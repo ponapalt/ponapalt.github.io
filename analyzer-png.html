@@ -1,6 +1,6 @@
 ---
 layout: post
-title: PNG Analyzer
+title: PNG 解析
 ---
 
 <nav>
@@ -202,7 +202,7 @@ title: PNG Analyzer
     }
 </style>
 
-<h1>PNG Analyzer</h1>
+<h1>PNG 解析</h1>
 
 <div class="drop-zone" id="dropZone">
     <p>PNGファイルをここにドラッグ＆ドロップ<br>または クリックして選択</p>
@@ -211,6 +211,7 @@ title: PNG Analyzer
 
 <div class="results" id="results"></div>
 
+<script src="analyzer.js"></script>
 <script>
 // PNG Parser Class
 class PNGParser {
@@ -332,6 +333,8 @@ class PNGParser {
                 this.palette = this.parsePLTE(data);
             } else if (type === 'tRNS') {
                 this.trns = data;
+            } else if (type === 'eXIf') {
+                this.exifData = parseExifData(data);
             } else if (type !== 'IEND') {
                 this.otherChunks.push(chunk);
             }
@@ -538,26 +541,8 @@ class PNGParser {
 }
 
 // UI
-const dropZone = document.getElementById('dropZone');
-const fileInput = document.getElementById('fileInput');
 const results = document.getElementById('results');
-
-dropZone.addEventListener('click', () => fileInput.click());
-dropZone.addEventListener('dragover', (e) => {
-    e.preventDefault();
-    dropZone.classList.add('dragover');
-});
-dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
-dropZone.addEventListener('drop', (e) => {
-    e.preventDefault();
-    dropZone.classList.remove('dragover');
-    const file = e.dataTransfer.files[0];
-    if (file) processFile(file);
-});
-fileInput.addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    if (file) processFile(file);
-});
+setupDropZone(processFile);
 
 let PNGData = null;
 let animationFrames = [];
@@ -778,6 +763,57 @@ async function displayResults(png, file, arrayBuffer) {
         </div>`;
     }
 
+    // EXIF
+    if (png.exifData && !png.exifData.error) {
+        html += `
+        <div class="section">
+            <h2>EXIF情報 (eXIf)</h2>
+            <div class="info-grid">
+                <div class="info-item">
+                    <label>バイトオーダー</label>
+                    <div class="value">${png.exifData.byteOrder}</div>
+                </div>
+            </div>`;
+
+        if (png.exifData.ifd0.length > 0) {
+            html += `
+            <h3>IFD0 (メイン画像)</h3>
+            <div class="info-grid">
+                ${png.exifData.ifd0.filter(e => e.tag !== 0x8769 && e.tag !== 0x8825).map(e => `
+                <div class="info-item">
+                    <label>${escapeHtml(e.tagName)} (0x${e.tag.toString(16).toUpperCase().padStart(4, '0')})</label>
+                    <div class="value">${formatExifValue(e)}</div>
+                </div>`).join('')}
+            </div>`;
+        }
+
+        if (png.exifData.exifIFD.length > 0) {
+            html += `
+            <h3>Exif IFD</h3>
+            <div class="info-grid">
+                ${png.exifData.exifIFD.filter(e => e.tag !== 0x927C && e.tag !== 0xA005).map(e => `
+                <div class="info-item">
+                    <label>${escapeHtml(e.tagName)} (0x${e.tag.toString(16).toUpperCase().padStart(4, '0')})</label>
+                    <div class="value">${formatExifValue(e)}</div>
+                </div>`).join('')}
+            </div>`;
+        }
+
+        if (png.exifData.gpsIFD.length > 0) {
+            html += `
+            <h3>GPS IFD</h3>
+            <div class="info-grid">
+                ${png.exifData.gpsIFD.map(e => `
+                <div class="info-item">
+                    <label>${escapeHtml(e.tagName)} (0x${e.tag.toString(16).toUpperCase().padStart(4, '0')})</label>
+                    <div class="value">${formatExifValue(e)}</div>
+                </div>`).join('')}
+            </div>`;
+        }
+
+        html += `</div>`;
+    }
+
     // Text chunks
     if (png.textChunks.length > 0) {
         html += `
@@ -950,19 +986,6 @@ function stepFrame(delta) {
     if (!PNGData) return;
     currentFrame = (currentFrame + delta + PNGData.frames.length) % PNGData.frames.length;
     updateFrameCounter(currentFrame + 1);
-}
-
-// Utility functions
-function formatBytes(bytes) {
-    if (bytes < 1024) return bytes + ' B';
-    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(2) + ' KB';
-    return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
-}
-
-function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
 }
 
 function calculateTotalDuration(frames) {

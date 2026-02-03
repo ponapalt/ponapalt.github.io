@@ -1,6 +1,6 @@
 ---
 layout: post
-title: GIF Analyzer
+title: GIF 解析
 ---
 
 <nav>
@@ -241,7 +241,7 @@ title: GIF Analyzer
     }
 </style>
 
-<h1>GIF Analyzer</h1>
+<h1>GIF 解析</h1>
 
 <div class="drop-zone" id="dropZone">
     <p>GIFファイルをここにドラッグ＆ドロップ<br>または クリックして選択</p>
@@ -250,6 +250,7 @@ title: GIF Analyzer
 
 <div class="results" id="results"></div>
 
+<script src="analyzer.js"></script>
 <script>
 // GIF Parser Class
 class GIFParser {
@@ -638,32 +639,8 @@ class GIFParser {
 }
 
 // UI Functions
-const dropZone = document.getElementById('dropZone');
-const fileInput = document.getElementById('fileInput');
 const results = document.getElementById('results');
-
-dropZone.addEventListener('click', () => fileInput.click());
-
-dropZone.addEventListener('dragover', (e) => {
-    e.preventDefault();
-    dropZone.classList.add('dragover');
-});
-
-dropZone.addEventListener('dragleave', () => {
-    dropZone.classList.remove('dragover');
-});
-
-dropZone.addEventListener('drop', (e) => {
-    e.preventDefault();
-    dropZone.classList.remove('dragover');
-    const file = e.dataTransfer.files[0];
-    if (file) processFile(file);
-});
-
-fileInput.addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    if (file) processFile(file);
-});
+setupDropZone(processFile);
 
 function processFile(file) {
     if (!file.type.includes('gif') && !file.name.toLowerCase().endsWith('.gif')) {
@@ -1115,40 +1092,12 @@ function stepFrame(delta) {
 }
 
 // Utility functions
-function formatBytes(bytes) {
-    if (bytes < 1024) return bytes + ' B';
-    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(2) + ' KB';
-    return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
-}
-
 function formatBinary(byte) {
     return byte.toString(2).padStart(8, '0');
 }
 
 function toHex(n) {
     return n.toString(16).padStart(2, '0').toUpperCase();
-}
-
-function formatHexDump(data) {
-    let result = '';
-    for (let i = 0; i < data.length; i += 16) {
-        const hex = [];
-        const ascii = [];
-        for (let j = 0; j < 16 && i + j < data.length; j++) {
-            const byte = data[i + j];
-            hex.push(toHex(byte));
-            ascii.push(byte >= 32 && byte < 127 ? String.fromCharCode(byte) : '.');
-        }
-        const offset = i.toString(16).padStart(8, '0').toUpperCase();
-        result += `${offset}  ${hex.join(' ').padEnd(48)}  ${ascii.join('')}\n`;
-    }
-    return result;
-}
-
-function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
 }
 
 function calculateTotalDuration(frames) {
