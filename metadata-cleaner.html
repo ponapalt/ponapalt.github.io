@@ -1,0 +1,691 @@
+---
+layout: post
+title: 画像メタデータ削除ツール
+---
+
+<nav>
+    <a href="analyzer-gif.html">GIF解析</a> |
+    <a href="analyzer-jpeg.html">JPEG解析</a> |
+    <a href="analyzer-png.html">PNG解析</a> |
+    <a href="analyzer-webp.html">WebP解析</a> |
+    <strong>メタデータ削除</strong>
+</nav>
+
+<style>
+    .drop-zone {
+        border: 2px dashed #999;
+        padding: 40px;
+        text-align: center;
+        margin: 20px auto;
+        max-width: 600px;
+        cursor: pointer;
+    }
+    .drop-zone:hover, .drop-zone.dragover {
+        border-color: #333;
+        background: #f5f5f5;
+    }
+    .drop-zone p {
+        color: #666;
+    }
+    #fileInput {
+        display: none;
+    }
+    .results {
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+    .section {
+        border: 1px solid #ddd;
+        padding: 20px;
+        margin: 20px 0;
+    }
+    .section h2 {
+        border-bottom: 1px solid #ddd;
+        padding-bottom: 10px;
+        margin-bottom: 15px;
+    }
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 10px;
+    }
+    .info-item {
+        background: #f9f9f9;
+        padding: 10px;
+        border: 1px solid #eee;
+    }
+    .info-item label {
+        color: #666;
+        font-size: 0.85em;
+        display: block;
+        margin-bottom: 4px;
+    }
+    .info-item .value {
+        font-weight: bold;
+        font-family: monospace;
+    }
+    .preview-section {
+        text-align: center;
+        padding: 20px;
+    }
+    .preview-section img {
+        border: 1px solid #ccc;
+        background: #f9f9f9;
+        max-width: 100%;
+        max-height: 400px;
+    }
+    .comparison {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+        margin-top: 20px;
+    }
+    .comparison-item {
+        text-align: center;
+    }
+    .comparison-item h3 {
+        margin-bottom: 10px;
+    }
+    .download-btn {
+        display: inline-block;
+        padding: 12px 24px;
+        background: #333;
+        color: white;
+        text-decoration: none;
+        border-radius: 4px;
+        margin-top: 10px;
+        cursor: pointer;
+        border: none;
+        font-size: 14px;
+    }
+    .download-btn:hover {
+        background: #555;
+    }
+    .loading {
+        text-align: center;
+        padding: 40px;
+        color: #666;
+    }
+    .removed-list {
+        background: #fff5f5;
+        padding: 15px;
+        border-left: 3px solid #e74c3c;
+        margin-top: 10px;
+    }
+    .removed-list h4 {
+        margin: 0 0 10px 0;
+        color: #e74c3c;
+    }
+    .removed-list ul {
+        margin: 0;
+        padding-left: 20px;
+    }
+    .removed-list li {
+        margin: 5px 0;
+    }
+    .success {
+        background: #f0fff4;
+        border-left: 3px solid #38a169;
+        color: #2d3748;
+    }
+    .success h4 {
+        color: #38a169;
+    }
+</style>
+
+<h1>画像メタデータ削除ツール</h1>
+
+<p>JPEG、PNG、WebP画像から余分なメタデータ(EXIF、XMP、コメントなど)を削除し、画像データのみを保持します。<br>
+<small>※カラーマネジメント情報(ICCプロファイルなど)は色の正確性のため保持されます。</small></p>
+
+<div class="drop-zone" id="dropZone">
+    <p>画像ファイルをここにドラッグ＆ドロップ<br>または クリックして選択<br><small>(JPEG, PNG, WebP)</small></p>
+    <input type="file" id="fileInput" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp">
+</div>
+
+<div class="results" id="results"></div>
+
+<script src="analyzer.js"></script>
+<script>
+// JPEG Metadata Cleaner
+class JPEGCleaner {
+    constructor(buffer) {
+        this.buffer = buffer;
+        this.uint8 = new Uint8Array(buffer);
+        this.pos = 0;
+        this.cleanedSegments = [];
+        this.removedMetadata = [];
+    }
+
+    readByte() {
+        return this.uint8[this.pos++];
+    }
+
+    readUint16BE() {
+        const val = (this.uint8[this.pos] << 8) | this.uint8[this.pos + 1];
+        this.pos += 2;
+        return val;
+    }
+
+    clean() {
+        // Start with SOI marker
+        if (this.uint8[0] !== 0xFF || this.uint8[1] !== 0xD8) {
+            throw new Error('Not a valid JPEG file');
+        }
+
+        this.cleanedSegments.push(0xFF, 0xD8);
+        this.pos = 2;
+
+        let foundSOS = false;
+
+        while (this.pos < this.buffer.byteLength && !foundSOS) {
+            if (this.readByte() !== 0xFF) continue;
+
+            let markerByte = this.readByte();
+            while (markerByte === 0xFF && this.pos < this.buffer.byteLength) {
+                markerByte = this.readByte();
+            }
+
+            const markerOffset = this.pos - 2;
+
+            // EOI marker
+            if (markerByte === 0xD9) {
+                this.cleanedSegments.push(0xFF, 0xD9);
+                break;
+            }
+
+            // RST markers (no length)
+            if (markerByte >= 0xD0 && markerByte <= 0xD7) {
+                this.cleanedSegments.push(0xFF, markerByte);
+                continue;
+            }
+
+            if (markerByte === 0x00) continue;
+
+            // Read segment length
+            const segLength = this.readUint16BE();
+            const segDataStart = this.pos;
+            const segDataLen = segLength - 2;
+
+            // Determine if we should keep this segment
+            const shouldKeep = this.shouldKeepSegment(markerByte);
+
+            if (shouldKeep) {
+                // Keep the segment
+                this.cleanedSegments.push(0xFF, markerByte);
+                this.cleanedSegments.push((segLength >> 8) & 0xFF, segLength & 0xFF);
+                for (let i = 0; i < segDataLen; i++) {
+                    this.cleanedSegments.push(this.uint8[segDataStart + i]);
+                }
+
+                // If this is SOS, copy all remaining scan data
+                if (markerByte === 0xDA) {
+                    foundSOS = true;
+                    this.pos = segDataStart + segDataLen;
+                    this.copyScanData();
+                }
+            } else {
+                // Remove the segment
+                this.removedMetadata.push(this.getMarkerName(markerByte));
+            }
+
+            this.pos = segDataStart + segDataLen;
+        }
+
+        return new Uint8Array(this.cleanedSegments).buffer;
+    }
+
+    shouldKeepSegment(markerByte) {
+        // Keep essential segments
+        // SOF markers
+        if ((markerByte >= 0xC0 && markerByte <= 0xC3) ||
+            (markerByte >= 0xC5 && markerByte <= 0xC7) ||
+            (markerByte >= 0xC9 && markerByte <= 0xCB) ||
+            (markerByte >= 0xCD && markerByte <= 0xCF)) {
+            return true; // Start of Frame
+        }
+
+        // Keep DQT, DHT, DRI, SOS
+        if (markerByte === 0xDB || // DQT (Quantization Table)
+            markerByte === 0xC4 || // DHT (Huffman Table)
+            markerByte === 0xDD || // DRI (Restart Interval)
+            markerByte === 0xDA) { // SOS (Start of Scan)
+            return true;
+        }
+
+        // Keep APP0 (JFIF) for compatibility
+        if (markerByte === 0xE0) {
+            return true; // JFIF
+        }
+
+        // Keep APP2 (ICC Profile) for color management
+        if (markerByte === 0xE2) {
+            return true; // ICC Profile
+        }
+
+        // Remove all other APP markers (APP1, APP3-APP15) which contain EXIF, XMP, IPTC, etc.
+        if (markerByte >= 0xE1 && markerByte <= 0xEF) {
+            return false;
+        }
+
+        // Remove COM (comment)
+        if (markerByte === 0xFE) {
+            return false;
+        }
+
+        // Keep other segments (DHP, EXP, etc.)
+        return true;
+    }
+
+    copyScanData() {
+        while (this.pos < this.buffer.byteLength) {
+            const byte = this.uint8[this.pos++];
+            this.cleanedSegments.push(byte);
+
+            if (byte === 0xFF) {
+                if (this.pos < this.buffer.byteLength) {
+                    const nextByte = this.uint8[this.pos];
+                    this.cleanedSegments.push(nextByte);
+                    this.pos++;
+
+                    // If we hit a marker that's not RST or stuffed byte, we're done
+                    if (nextByte !== 0x00 && !(nextByte >= 0xD0 && nextByte <= 0xD7)) {
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    getMarkerName(byte) {
+        const names = {
+            0xE1: 'APP1 (EXIF/XMP)', 0xE3: 'APP3',
+            0xE4: 'APP4', 0xE5: 'APP5', 0xE6: 'APP6', 0xE7: 'APP7',
+            0xE8: 'APP8', 0xE9: 'APP9', 0xEA: 'APP10', 0xEB: 'APP11',
+            0xEC: 'APP12', 0xED: 'APP13 (IPTC)', 0xEE: 'APP14 (Adobe)',
+            0xEF: 'APP15', 0xFE: 'COM (Comment)'
+        };
+        return names[byte] || `Marker 0x${byte.toString(16).toUpperCase()}`;
+    }
+}
+
+// PNG Metadata Cleaner
+class PNGCleaner {
+    constructor(buffer) {
+        this.buffer = buffer;
+        this.uint8 = new Uint8Array(buffer);
+        this.pos = 0;
+        this.cleanedData = [];
+        this.removedMetadata = [];
+    }
+
+    readUint32BE() {
+        const val = (this.uint8[this.pos] << 24) |
+                    (this.uint8[this.pos + 1] << 16) |
+                    (this.uint8[this.pos + 2] << 8) |
+                    this.uint8[this.pos + 3];
+        this.pos += 4;
+        return val >>> 0;
+    }
+
+    readBytes(n) {
+        const bytes = this.uint8.slice(this.pos, this.pos + n);
+        this.pos += n;
+        return bytes;
+    }
+
+    readString(n) {
+        let str = '';
+        for (let i = 0; i < n; i++) {
+            str += String.fromCharCode(this.uint8[this.pos++]);
+        }
+        return str;
+    }
+
+    clean() {
+        // Check PNG signature
+        const signature = [137, 80, 78, 71, 13, 10, 26, 10];
+        for (let i = 0; i < 8; i++) {
+            if (this.uint8[i] !== signature[i]) {
+                throw new Error('Not a valid PNG file');
+            }
+            this.cleanedData.push(this.uint8[i]);
+        }
+        this.pos = 8;
+
+        // Process chunks
+        while (this.pos < this.buffer.byteLength) {
+            const chunkStart = this.pos;
+            const length = this.readUint32BE();
+            const type = this.readString(4);
+            const data = this.readBytes(length);
+            const crc = this.readUint32BE();
+
+            // Determine if we should keep this chunk
+            if (this.shouldKeepChunk(type)) {
+                // Write chunk to cleaned data
+                this.cleanedData.push((length >> 24) & 0xFF);
+                this.cleanedData.push((length >> 16) & 0xFF);
+                this.cleanedData.push((length >> 8) & 0xFF);
+                this.cleanedData.push(length & 0xFF);
+
+                for (let i = 0; i < 4; i++) {
+                    this.cleanedData.push(type.charCodeAt(i));
+                }
+
+                for (let i = 0; i < length; i++) {
+                    this.cleanedData.push(data[i]);
+                }
+
+                this.cleanedData.push((crc >> 24) & 0xFF);
+                this.cleanedData.push((crc >> 16) & 0xFF);
+                this.cleanedData.push((crc >> 8) & 0xFF);
+                this.cleanedData.push(crc & 0xFF);
+            } else {
+                this.removedMetadata.push(type);
+            }
+
+            if (type === 'IEND') break;
+        }
+
+        return new Uint8Array(this.cleanedData).buffer;
+    }
+
+    shouldKeepChunk(type) {
+        // Critical chunks (must keep)
+        const critical = ['IHDR', 'PLTE', 'IDAT', 'IEND'];
+        if (critical.includes(type)) return true;
+
+        // Ancillary chunks to keep for proper rendering
+        const keepAncillary = [
+            'tRNS', // Transparency
+            'cHRM', // Chromaticity
+            'gAMA', // Gamma
+            'iCCP', // ICC profile (some may want to remove this too)
+            'sBIT', // Significant bits
+            'sRGB', // sRGB color space
+            'bKGD', // Background color
+            'hIST', // Histogram
+            'pHYs', // Physical pixel dimensions
+            'sPLT'  // Suggested palette
+        ];
+        if (keepAncillary.includes(type)) return true;
+
+        // Remove metadata chunks
+        const metadataChunks = [
+            'tEXt', 'zTXt', 'iTXt', // Text data
+            'eXIf', // EXIF data
+            'tIME', // Last modification time
+        ];
+        if (metadataChunks.includes(type)) return false;
+
+        // Unknown chunks - remove for safety
+        return false;
+    }
+}
+
+// WebP Metadata Cleaner
+class WebPCleaner {
+    constructor(buffer) {
+        this.buffer = buffer;
+        this.uint8 = new Uint8Array(buffer);
+        this.pos = 0;
+        this.cleanedData = [];
+        this.removedMetadata = [];
+    }
+
+    readUint32LE() {
+        const val = this.uint8[this.pos] |
+                    (this.uint8[this.pos + 1] << 8) |
+                    (this.uint8[this.pos + 2] << 16) |
+                    (this.uint8[this.pos + 3] << 24);
+        this.pos += 4;
+        return val >>> 0;
+    }
+
+    readString(n) {
+        let str = '';
+        for (let i = 0; i < n; i++) {
+            str += String.fromCharCode(this.uint8[this.pos++]);
+        }
+        return str;
+    }
+
+    readBytes(n) {
+        const bytes = this.uint8.slice(this.pos, this.pos + n);
+        this.pos += n;
+        return bytes;
+    }
+
+    writeUint32LE(val) {
+        this.cleanedData.push(val & 0xFF);
+        this.cleanedData.push((val >> 8) & 0xFF);
+        this.cleanedData.push((val >> 16) & 0xFF);
+        this.cleanedData.push((val >> 24) & 0xFF);
+    }
+
+    clean() {
+        // Check RIFF header
+        const riff = this.readString(4);
+        if (riff !== 'RIFF') {
+            throw new Error('Not a valid WebP file');
+        }
+
+        const fileSize = this.readUint32LE();
+        const webp = this.readString(4);
+        if (webp !== 'WEBP') {
+            throw new Error('Not a valid WebP file');
+        }
+
+        // Start building cleaned file
+        // We'll write RIFF header later with correct size
+        const headerStart = this.cleanedData.length;
+        for (let i = 0; i < 12; i++) this.cleanedData.push(0); // Placeholder
+
+        const chunksToKeep = [];
+
+        // Read all chunks
+        while (this.pos < this.buffer.byteLength) {
+            if (this.pos + 8 > this.buffer.byteLength) break;
+
+            const chunkType = this.readString(4);
+            const chunkSize = this.readUint32LE();
+            const chunkData = this.readBytes(chunkSize);
+
+            // Padding byte if chunk size is odd
+            if (chunkSize % 2 === 1 && this.pos < this.buffer.byteLength) {
+                this.pos++;
+            }
+
+            if (this.shouldKeepChunk(chunkType)) {
+                chunksToKeep.push({ type: chunkType, size: chunkSize, data: chunkData });
+            } else {
+                this.removedMetadata.push(chunkType);
+            }
+        }
+
+        // Write kept chunks
+        for (const chunk of chunksToKeep) {
+            for (let i = 0; i < 4; i++) {
+                this.cleanedData.push(chunk.type.charCodeAt(i));
+            }
+            this.writeUint32LE(chunk.size);
+            for (let i = 0; i < chunk.data.length; i++) {
+                this.cleanedData.push(chunk.data[i]);
+            }
+            if (chunk.size % 2 === 1) {
+                this.cleanedData.push(0); // Padding
+            }
+        }
+
+        // Write RIFF header with correct size
+        const finalSize = this.cleanedData.length - 8;
+        this.cleanedData[0] = 'R'.charCodeAt(0);
+        this.cleanedData[1] = 'I'.charCodeAt(0);
+        this.cleanedData[2] = 'F'.charCodeAt(0);
+        this.cleanedData[3] = 'F'.charCodeAt(0);
+        this.cleanedData[4] = finalSize & 0xFF;
+        this.cleanedData[5] = (finalSize >> 8) & 0xFF;
+        this.cleanedData[6] = (finalSize >> 16) & 0xFF;
+        this.cleanedData[7] = (finalSize >> 24) & 0xFF;
+        this.cleanedData[8] = 'W'.charCodeAt(0);
+        this.cleanedData[9] = 'E'.charCodeAt(0);
+        this.cleanedData[10] = 'B'.charCodeAt(0);
+        this.cleanedData[11] = 'P'.charCodeAt(0);
+
+        return new Uint8Array(this.cleanedData).buffer;
+    }
+
+    shouldKeepChunk(type) {
+        // Keep image data chunks
+        const imageChunks = ['VP8 ', 'VP8L', 'VP8X', 'ANIM', 'ANMF', 'ALPH', 'ICCP'];
+        if (imageChunks.includes(type)) return true;
+
+        // Remove metadata chunks
+        const metadataChunks = ['EXIF', 'XMP '];
+        if (metadataChunks.includes(type)) return false;
+
+        // Unknown chunks - remove for safety
+        return false;
+    }
+}
+
+// UI
+const results = document.getElementById('results');
+setupDropZone(processFile);
+
+function processFile(file) {
+    results.innerHTML = '<div class="loading">処理中...</div>';
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        try {
+            const arrayBuffer = e.target.result;
+            const uint8 = new Uint8Array(arrayBuffer);
+
+            // Detect file type
+            let cleaner, fileType, newFileName, mimeType;
+
+            // Check JPEG
+            if (uint8[0] === 0xFF && uint8[1] === 0xD8) {
+                cleaner = new JPEGCleaner(arrayBuffer);
+                fileType = 'JPEG';
+                newFileName = file.name.replace(/\.(jpe?g)$/i, '_cleaned.$1');
+                mimeType = 'image/jpeg';
+            }
+            // Check PNG
+            else if (uint8[0] === 137 && uint8[1] === 80 && uint8[2] === 78 && uint8[3] === 71) {
+                cleaner = new PNGCleaner(arrayBuffer);
+                fileType = 'PNG';
+                newFileName = file.name.replace(/\.png$/i, '_cleaned.png');
+                mimeType = 'image/png';
+            }
+            // Check WebP
+            else if (String.fromCharCode(...uint8.slice(0, 4)) === 'RIFF' &&
+                     String.fromCharCode(...uint8.slice(8, 12)) === 'WEBP') {
+                cleaner = new WebPCleaner(arrayBuffer);
+                fileType = 'WebP';
+                newFileName = file.name.replace(/\.webp$/i, '_cleaned.webp');
+                mimeType = 'image/webp';
+            }
+            else {
+                throw new Error('サポートされていないファイル形式です。JPEG、PNG、WebPのみ対応しています。');
+            }
+
+            const cleanedBuffer = cleaner.clean();
+            displayResults(file, arrayBuffer, cleanedBuffer, cleaner.removedMetadata, fileType, newFileName, mimeType);
+
+        } catch (err) {
+            results.innerHTML = `<div class="section"><h2>エラー</h2><p>${escapeHtml(err.message)}</p></div>`;
+            console.error(err);
+        }
+    };
+    reader.readAsArrayBuffer(file);
+}
+
+function displayResults(originalFile, originalBuffer, cleanedBuffer, removedMetadata, fileType, newFileName, mimeType) {
+    const originalSize = originalBuffer.byteLength;
+    const cleanedSize = cleanedBuffer.byteLength;
+    const reduction = originalSize - cleanedSize;
+    const reductionPercent = ((reduction / originalSize) * 100).toFixed(2);
+
+    let html = `
+    <div class="section">
+        <h2>ファイル情報</h2>
+        <div class="info-grid">
+            <div class="info-item">
+                <label>ファイル形式</label>
+                <div class="value">${fileType}</div>
+            </div>
+            <div class="info-item">
+                <label>元のファイル名</label>
+                <div class="value">${escapeHtml(originalFile.name)}</div>
+            </div>
+            <div class="info-item">
+                <label>元のサイズ</label>
+                <div class="value">${formatBytes(originalSize)}</div>
+            </div>
+            <div class="info-item">
+                <label>クリーン後のサイズ</label>
+                <div class="value">${formatBytes(cleanedSize)}</div>
+            </div>
+            <div class="info-item">
+                <label>削減量</label>
+                <div class="value">${formatBytes(reduction)} (${reductionPercent}%)</div>
+            </div>
+        </div>
+
+        <div class="${removedMetadata.length > 0 ? 'removed-list' : 'removed-list success'}">
+            <h4>${removedMetadata.length > 0 ? '削除されたメタデータ' : 'メタデータなし'}</h4>
+            ${removedMetadata.length > 0 ? `
+                <ul>
+                    ${removedMetadata.map(m => `<li>${escapeHtml(m)}</li>`).join('')}
+                </ul>
+            ` : '<p>削除すべきメタデータは見つかりませんでした。</p>'}
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>画像プレビュー</h2>
+        <div class="comparison">
+            <div class="comparison-item">
+                <h3>元の画像</h3>
+                <img id="originalPreview" alt="Original">
+                <div style="margin-top: 10px; color: #666; font-size: 0.9em;">
+                    ${formatBytes(originalSize)}
+                </div>
+            </div>
+            <div class="comparison-item">
+                <h3>クリーン後の画像</h3>
+                <img id="cleanedPreview" alt="Cleaned">
+                <div style="margin-top: 10px; color: #666; font-size: 0.9em;">
+                    ${formatBytes(cleanedSize)}
+                </div>
+                <button class="download-btn" id="downloadBtn">
+                    ダウンロード
+                </button>
+            </div>
+        </div>
+    </div>`;
+
+    results.innerHTML = html;
+
+    // Show previews
+    const originalBlob = new Blob([originalBuffer], { type: mimeType });
+    const cleanedBlob = new Blob([cleanedBuffer], { type: mimeType });
+
+    const originalUrl = URL.createObjectURL(originalBlob);
+    const cleanedUrl = URL.createObjectURL(cleanedBlob);
+
+    document.getElementById('originalPreview').src = originalUrl;
+    document.getElementById('cleanedPreview').src = cleanedUrl;
+
+    // Setup download button
+    document.getElementById('downloadBtn').addEventListener('click', () => {
+        const a = document.createElement('a');
+        a.href = cleanedUrl;
+        a.download = newFileName;
+        a.click();
+    });
+}
+</script>
