@@ -1,0 +1,559 @@
+---
+layout: post
+title: SSGセーブデータ展開ツール
+---
+
+<style>
+    .drop-zone {
+        border: 2px dashed #999;
+        padding: 40px;
+        text-align: center;
+        margin: 20px auto;
+        max-width: 600px;
+        cursor: pointer;
+    }
+    .drop-zone:hover, .drop-zone.dragover {
+        border-color: #333;
+        background: #f5f5f5;
+    }
+    .drop-zone p {
+        color: #666;
+    }
+    #fileInput {
+        display: none;
+    }
+    .results {
+        max-width: 900px;
+        margin: 0 auto;
+    }
+    .section {
+        border: 1px solid #ddd;
+        padding: 20px;
+        margin: 20px 0;
+    }
+    .section h2 {
+        border-bottom: 1px solid #ddd;
+        padding-bottom: 10px;
+        margin-bottom: 15px;
+    }
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+        gap: 10px;
+        margin-bottom: 10px;
+    }
+    .info-item {
+        background: #f9f9f9;
+        padding: 10px;
+        border: 1px solid #eee;
+    }
+    .info-item label {
+        color: #666;
+        font-size: 0.85em;
+        display: block;
+        margin-bottom: 4px;
+    }
+    .info-item .value {
+        font-weight: bold;
+        font-family: monospace;
+        word-break: break-all;
+    }
+    .file-list {
+        margin-top: 10px;
+    }
+    .file-entry {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 12px;
+        border: 1px solid #eee;
+        margin-bottom: 6px;
+        background: #fafafa;
+    }
+    .file-entry:hover {
+        background: #f0f0f0;
+    }
+    .file-name {
+        flex: 1;
+        font-family: monospace;
+        font-size: 0.95em;
+        word-break: break-all;
+    }
+    .file-meta {
+        color: #888;
+        font-size: 0.85em;
+        white-space: nowrap;
+    }
+    .file-type-badge {
+        display: inline-block;
+        padding: 2px 7px;
+        font-size: 0.75em;
+        font-family: monospace;
+        background: #e8e8e8;
+        border-radius: 3px;
+        white-space: nowrap;
+    }
+    .file-type-badge.binary {
+        background: #d0e8ff;
+    }
+    .download-btn {
+        display: inline-block;
+        padding: 6px 16px;
+        background: #333;
+        color: white;
+        text-decoration: none;
+        cursor: pointer;
+        border: none;
+        font-size: 13px;
+        white-space: nowrap;
+    }
+    .download-btn:hover {
+        background: #555;
+    }
+    .download-all-btn {
+        display: inline-block;
+        padding: 10px 22px;
+        background: #333;
+        color: white;
+        text-decoration: none;
+        cursor: pointer;
+        border: none;
+        font-size: 14px;
+        margin-top: 12px;
+    }
+    .download-all-btn:hover {
+        background: #555;
+    }
+    .loading {
+        text-align: center;
+        padding: 40px;
+        color: #666;
+    }
+    .error-box {
+        background: #fff5f5;
+        border-left: 3px solid #e74c3c;
+        padding: 15px;
+        margin: 10px 0;
+        color: #c0392b;
+        font-family: monospace;
+    }
+    .format-badge {
+        display: inline-block;
+        padding: 3px 10px;
+        font-size: 0.8em;
+        font-family: monospace;
+        background: #eef;
+        border: 1px solid #99c;
+        border-radius: 3px;
+        margin-left: 8px;
+        vertical-align: middle;
+    }
+    .format-badge.legacy {
+        background: #ffd;
+        border-color: #cc9;
+    }
+    .no-files {
+        color: #999;
+        padding: 15px;
+        text-align: center;
+        font-style: italic;
+    }
+</style>
+
+<p>SSP/SSGセーブ共有データ（.ssgファイル）を展開し、内包されるセーブファイルを個別にダウンロードできます。<br>
+<small>※ ファイルはブラウザ内で処理され、サーバーへの送信は行いません。</small></p>
+
+<div class="drop-zone" id="dropZone">
+    <p>SSGファイルをここにドラッグ＆ドロップ<br>または クリックして選択<br><small>(.ssg)</small></p>
+    <input type="file" id="fileInput" accept=".ssg">
+</div>
+
+<div class="results" id="results"></div>
+
+<script src="analyzer.js"></script>
+<script>
+// ---- FILETIME ユーティリティ ----
+function filetimeToDate(lowDWord, highDWord) {
+    // FILETIME: 1601-01-01 からの 100ns 単位整数
+    const low = BigInt(lowDWord >>> 0);
+    const high = BigInt(highDWord >>> 0);
+    const filetime = (high << 32n) | low;
+    if (filetime === 0n) return null;
+    const EPOCH_DIFF = 116444736000000000n;
+    const unixMs = (filetime - EPOCH_DIFF) / 10000n;
+    return new Date(Number(unixMs));
+}
+
+// ---- zlib 展開 (DecompressionStream 'deflate' = RFC 1950) ----
+async function zlibDecompress(compressedData) {
+    const ds = new DecompressionStream('deflate');
+    const writer = ds.writable.getWriter();
+    const reader = ds.readable.getReader();
+
+    writer.write(compressedData);
+    writer.close();
+
+    const chunks = [];
+    let totalLength = 0;
+    while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        chunks.push(value);
+        totalLength += value.length;
+    }
+
+    const result = new Uint8Array(totalLength);
+    let offset = 0;
+    for (const chunk of chunks) {
+        result.set(chunk, offset);
+        offset += chunk.length;
+    }
+    return result;
+}
+
+// ---- Base64 デコード ----
+function base64Decode(str) {
+    // 空白・改行を除去してからデコード
+    const clean = str.replace(/[\s\r\n]/g, '');
+    const binary = atob(clean);
+    const result = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+        result[i] = binary.charCodeAt(i);
+    }
+    return result;
+}
+
+// ---- SSG コンテンツ（展開後テキスト）パーサー ----
+function parseSSGContent(uint8Array) {
+    let pos = 0;
+    const textDecoder = new TextDecoder('utf-8');
+
+    // \r\n で終端される行を読む
+    function readLine() {
+        const start = pos;
+        while (pos < uint8Array.length) {
+            if (uint8Array[pos] === 0x0D && pos + 1 < uint8Array.length && uint8Array[pos + 1] === 0x0A) {
+                const line = textDecoder.decode(uint8Array.slice(start, pos));
+                pos += 2;
+                return line;
+            }
+            pos++;
+        }
+        return textDecoder.decode(uint8Array.slice(start, pos));
+    }
+
+    // SIZE バイトをそのまま読む（バイナリ安全）
+    function readBytes(n) {
+        const data = uint8Array.slice(pos, pos + n);
+        pos += n;
+        return data;
+    }
+
+    // \r\n をスキップ
+    function skipCRLF() {
+        if (pos < uint8Array.length - 1 &&
+            uint8Array[pos] === 0x0D && uint8Array[pos + 1] === 0x0A) {
+            pos += 2;
+        }
+    }
+
+    const result = {
+        version: null,
+        timestamp: null,
+        ghostname: null,
+        computername: null,
+        files: [],
+        warnings: []
+    };
+
+    // バージョン識別子チェック（旧フォーマットでは存在しない場合もある）
+    const savedPos = pos;
+    const firstLine = readLine();
+    if (firstLine === '===SSP_SAVESHARE:1.0===') {
+        result.version = '1.0';
+    } else {
+        // 旧フォーマット：バージョン行なし、巻き戻して再解析
+        result.warnings.push('バージョン識別子がありません（旧フォーマット）');
+        pos = savedPos;
+    }
+
+    let currentFile = null;
+
+    while (pos < uint8Array.length) {
+        const lineStart = pos;
+        const line = readLine();
+
+        if (line === '===SSP_SAVESHARE_END===') {
+            break;
+        }
+
+        if (line.startsWith('[TIMESTAMP:') && line.endsWith(']')) {
+            result.timestamp = line.slice(11, -1);
+        } else if (line.startsWith('[GHOSTNAME:') && line.endsWith(']')) {
+            result.ghostname = line.slice(11, -1);
+        } else if (line.startsWith('[COMPUTERNAME:') && line.endsWith(']')) {
+            result.computername = line.slice(14, -1);
+        } else if (line.startsWith('[FILE:') && line.endsWith(']')) {
+            currentFile = {
+                name: line.slice(6, -1),
+                size: 0,
+                type: 'TEXT',
+                rawData: null,
+                decodedData: null
+            };
+        } else if (currentFile && line.startsWith('[SIZE:') && line.endsWith(']')) {
+            currentFile.size = parseInt(line.slice(6, -1), 10);
+        } else if (currentFile && line.startsWith('[TYPE:') && line.endsWith(']')) {
+            currentFile.type = line.slice(6, -1); // 'TEXT' or 'BINARY'
+            // ここで SIZE バイトのデータ本体を読む
+            currentFile.rawData = readBytes(currentFile.size);
+            skipCRLF(); // データ直後の \r\n
+        } else if (line === '[ENDFILE]' && currentFile) {
+            // デコード処理
+            if (currentFile.type === 'BINARY') {
+                try {
+                    currentFile.decodedData = base64Decode(
+                        new TextDecoder('ascii').decode(currentFile.rawData)
+                    );
+                } catch (e) {
+                    currentFile.decodedData = currentFile.rawData;
+                    result.warnings.push(`${currentFile.name}: Base64デコード失敗`);
+                }
+            } else {
+                // TEXT: 生バイト列をそのまま
+                currentFile.decodedData = currentFile.rawData;
+            }
+            result.files.push(currentFile);
+            currentFile = null;
+        }
+    }
+
+    if (currentFile) {
+        result.warnings.push('ファイルエントリが不完全なまま終端に達しました');
+    }
+
+    return result;
+}
+
+// ---- SSG バイナリヘッダ解析 ----
+async function parseSSGFile(arrayBuffer) {
+    const uint8 = new Uint8Array(arrayBuffer);
+    const dv = new DataView(arrayBuffer);
+
+    // マジック確認: "SSZ\x00"
+    const isBinary = (
+        uint8[0] === 0x53 && uint8[1] === 0x53 &&
+        uint8[2] === 0x5A && uint8[3] === 0x00
+    );
+
+    if (isBinary) {
+        // バイナリ圧縮フォーマット
+        const ftLow  = dv.getUint32(4, true);
+        const ftHigh = dv.getUint32(8, true);
+        const date   = filetimeToDate(ftLow, ftHigh);
+
+        const nameLen = dv.getUint32(12, true);
+        if (16 + nameLen + 8 > uint8.length) {
+            throw new Error('ヘッダが不正です（コンピュータ名長が範囲外）');
+        }
+        const computerNameBytes = uint8.slice(16, 16 + nameLen);
+        const computerName = new TextDecoder('utf-8').decode(computerNameBytes);
+
+        const uncompSize = dv.getUint32(16 + nameLen, true);
+        const MAX_UNCOMP = 64 * 1024 * 1024;
+        if (uncompSize > MAX_UNCOMP) {
+            throw new Error(`展開後サイズ上限 (64MB) を超えています: ${uncompSize} bytes`);
+        }
+
+        const compressedData = uint8.slice(20 + nameLen);
+
+        let decompressed;
+        try {
+            decompressed = await zlibDecompress(compressedData);
+        } catch (e) {
+            throw new Error('zlib展開に失敗しました: ' + e.message);
+        }
+
+        if (decompressed.length !== uncompSize) {
+            // サイズ不一致は警告に留める
+        }
+
+        const content = parseSSGContent(decompressed);
+
+        return {
+            format: 'binary',
+            headerDate: date,
+            headerComputerName: computerName,
+            compressedSize: compressedData.length,
+            uncompressedSize: decompressed.length,
+            content
+        };
+    } else {
+        // 旧フォーマット（プレーンテキスト）
+        const content = parseSSGContent(uint8);
+        return {
+            format: 'legacy',
+            headerDate: null,
+            headerComputerName: null,
+            compressedSize: null,
+            uncompressedSize: uint8.length,
+            content
+        };
+    }
+}
+
+// ---- ファイル名からパス区切りを除去 ----
+function safeName(name) {
+    // パス区切り文字を含む場合はベースネームのみ使用
+    return name.replace(/[/\\]/g, '_');
+}
+
+// ---- UI ----
+const results = document.getElementById('results');
+setupDropZone(processFile);
+
+function processFile(file) {
+    results.innerHTML = '<div class="loading">処理中...</div>';
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+        try {
+            const arrayBuffer = e.target.result;
+            const parsed = await parseSSGFile(arrayBuffer);
+            displayResults(file, parsed);
+        } catch (err) {
+            results.innerHTML = `<div class="section"><h2>エラー</h2><div class="error-box">${escapeHtml(err.message)}</div></div>`;
+            console.error(err);
+        }
+    };
+    reader.readAsArrayBuffer(file);
+}
+
+function displayResults(file, parsed) {
+    const { format, headerDate, headerComputerName, compressedSize, uncompressedSize, content } = parsed;
+    const { version, timestamp, ghostname, computername, files, warnings } = content;
+
+    const formatLabel = format === 'binary'
+        ? '<span class="format-badge">バイナリ圧縮形式</span>'
+        : '<span class="format-badge legacy">旧プレーンテキスト形式</span>';
+
+    // 表示用タイムスタンプ
+    const displayDate = headerDate
+        ? headerDate.toLocaleString('ja-JP', { timeZone: 'UTC' }) + ' (UTC)'
+        : (timestamp || '不明');
+
+    let html = `
+    <div class="section">
+        <h2>ファイル情報 ${formatLabel}</h2>
+        <div class="info-grid">
+            <div class="info-item">
+                <label>元ファイル名</label>
+                <div class="value">${escapeHtml(file.name)}</div>
+            </div>
+            <div class="info-item">
+                <label>保存日時</label>
+                <div class="value">${escapeHtml(displayDate)}</div>
+            </div>`;
+
+    if (ghostname) {
+        html += `
+            <div class="info-item">
+                <label>ゴースト名</label>
+                <div class="value">${escapeHtml(ghostname)}</div>
+            </div>`;
+    }
+
+    const dispComputer = headerComputerName || computername;
+    if (dispComputer) {
+        html += `
+            <div class="info-item">
+                <label>コンピュータ名</label>
+                <div class="value">${escapeHtml(dispComputer)}</div>
+            </div>`;
+    }
+
+    if (format === 'binary') {
+        html += `
+            <div class="info-item">
+                <label>圧縮サイズ</label>
+                <div class="value">${formatBytes(compressedSize)}</div>
+            </div>
+            <div class="info-item">
+                <label>展開後サイズ</label>
+                <div class="value">${formatBytes(uncompressedSize)}</div>
+            </div>`;
+    }
+
+    html += `
+            <div class="info-item">
+                <label>内包ファイル数</label>
+                <div class="value">${files.length} 件</div>
+            </div>
+        </div>`;
+
+    if (warnings.length > 0) {
+        html += `<div style="background:#fffbe6;border-left:3px solid #e6a817;padding:10px 15px;margin-top:10px;">
+            <strong>警告:</strong><ul style="margin:5px 0 0;padding-left:20px;">
+            ${warnings.map(w => `<li>${escapeHtml(w)}</li>`).join('')}
+            </ul></div>`;
+    }
+
+    html += `</div>`;
+
+    // ファイル一覧
+    html += `<div class="section"><h2>内包ファイル一覧</h2>`;
+
+    if (files.length === 0) {
+        html += `<div class="no-files">ファイルエントリが見つかりませんでした。</div>`;
+    } else {
+        html += `<div class="file-list" id="fileList">`;
+        files.forEach((f, idx) => {
+            const size = f.decodedData ? f.decodedData.length : 0;
+            const typeBadge = f.type === 'BINARY'
+                ? `<span class="file-type-badge binary">BINARY</span>`
+                : `<span class="file-type-badge">TEXT</span>`;
+            html += `
+            <div class="file-entry">
+                <div class="file-name">${escapeHtml(f.name)}</div>
+                <div class="file-meta">${formatBytes(size)}</div>
+                ${typeBadge}
+                <button class="download-btn" onclick="downloadFile(${idx})">ダウンロード</button>
+            </div>`;
+        });
+        html += `</div>`;
+
+        if (files.length > 1) {
+            html += `<button class="download-all-btn" onclick="downloadAll()">すべてダウンロード</button>`;
+        }
+    }
+
+    html += `</div>`;
+    results.innerHTML = html;
+
+    // ファイルデータをグローバルに保持
+    window._ssgFiles = files;
+}
+
+function downloadFile(idx) {
+    const f = window._ssgFiles[idx];
+    if (!f || !f.decodedData) return;
+
+    const blob = new Blob([f.decodedData], { type: 'application/octet-stream' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = safeName(f.name);
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function downloadAll() {
+    const files = window._ssgFiles;
+    if (!files || files.length === 0) return;
+
+    // 少しずつ間を空けてダウンロード（ブラウザによる制限を避けるため）
+    files.forEach((f, idx) => {
+        setTimeout(() => downloadFile(idx), idx * 120);
+    });
+}
+</script>
