@@ -814,17 +814,23 @@ function displayResults(gif, file) {
         </div>
 
         <div class="preview-section">
-            <canvas id="previewCanvas" width="${lsd.width}" height="${lsd.height}"></canvas>`;
+            <canvas id="previewCanvas" width="${lsd.width}" height="${lsd.height}"></canvas>
+            <div class="animation-controls">`;
 
     if (isAnimated) {
         html += `
-            <div class="animation-controls">
                 <button onclick="playAnimation()">&#9654; 再生</button>
                 <button onclick="pauseAnimation()">&#9646;&#9646; 停止</button>
                 <button onclick="stepFrame(-1)">&#9664; 前</button>
-                <button onclick="stepFrame(1)">&#9654; 次</button>
-            </div>
-            <div id="frameCounter" style="margin-top:10px;color:#666;">フレーム: 1 / ${gif.frames.length}</div>`;
+                <button onclick="stepFrame(1)">&#9654; 次</button>`;
+    }
+
+    html += `
+                <button id="alphaToggleBtn" onclick="toggleAlphaOff()">透明度OFF</button>
+            </div>`;
+
+    if (isAnimated) {
+        html += `<div id="frameCounter" style="margin-top:10px;color:#666;">フレーム: 1 / ${gif.frames.length}</div>`;
     }
 
     html += `
@@ -929,6 +935,7 @@ function renderFrames(gif) {
         const ctx = canvas.getContext('2d');
         const imageData = new ImageData(frame.pixels, frame.descriptor.width, frame.descriptor.height);
         ctx.putImageData(imageData, 0, 0);
+        if (alphaOff) stripAlpha(canvas);
 
         const gce = frame.graphicsControl;
 
@@ -975,6 +982,39 @@ let gifData = null;
 let compositeCanvas = null;
 let compositeCtx = null;
 let previousImageData = null;
+let alphaOff = false;
+
+function stripAlpha(canvas) {
+    const ctx = canvas.getContext('2d');
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const data = imageData.data;
+    for (let i = 3; i < data.length; i += 4) {
+        data[i] = 255;
+    }
+    ctx.putImageData(imageData, 0, 0);
+}
+
+function toggleAlphaOff() {
+    alphaOff = !alphaOff;
+    const btn = document.getElementById('alphaToggleBtn');
+    if (btn) {
+        btn.textContent = alphaOff ? '透明度ON' : '透明度OFF';
+        btn.style.fontWeight = alphaOff ? 'bold' : 'normal';
+    }
+    const canvas = document.getElementById('previewCanvas');
+    if (canvas) canvas.style.background = alphaOff ? '#fff' : '';
+    if (gifData) {
+        pauseAnimation();
+        currentFrame = 0;
+        clearCanvas();
+        drawFrame(0);
+        const container = document.getElementById('framesContainer');
+        if (container) {
+            container.innerHTML = '';
+            renderFrames(gifData);
+        }
+    }
+}
 
 function setupAnimation(gif) {
     gifData = gif;
@@ -1046,6 +1086,8 @@ function drawFrame(index) {
         frame.descriptor.left,
         frame.descriptor.top
     );
+
+    if (alphaOff) stripAlpha(compositeCanvas);
 
     const counter = document.getElementById('frameCounter');
     if (counter) {

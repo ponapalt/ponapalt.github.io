@@ -503,6 +503,49 @@ setupDropZone(processFile);
 let webpData = null;
 let animationId = null;
 let currentFrame = 0;
+let alphaOff = false;
+let staticPreviewUrl = null;
+
+function stripAlpha(canvas) {
+    const ctx = canvas.getContext('2d');
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const data = imageData.data;
+    for (let i = 3; i < data.length; i += 4) {
+        data[i] = 255;
+    }
+    ctx.putImageData(imageData, 0, 0);
+}
+
+async function renderStaticPreview(url) {
+    const canvas = document.getElementById('previewCanvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const img = new Image();
+    img.src = url;
+    await new Promise(resolve => { img.onload = resolve; img.onerror = resolve; });
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(img, 0, 0);
+    if (alphaOff) stripAlpha(canvas);
+}
+
+function toggleAlphaOff() {
+    alphaOff = !alphaOff;
+    const btn = document.getElementById('alphaToggleBtn');
+    if (btn) {
+        btn.textContent = alphaOff ? '透明度ON' : '透明度OFF';
+        btn.style.fontWeight = alphaOff ? 'bold' : 'normal';
+    }
+    const canvas = document.getElementById('previewCanvas');
+    if (canvas) canvas.style.background = alphaOff ? '#fff' : '';
+    if (staticPreviewUrl) {
+        renderStaticPreview(staticPreviewUrl);
+    } else if (window.webpPreviewImg) {
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(window.webpPreviewImg, 0, 0);
+        if (alphaOff) stripAlpha(canvas);
+    }
+}
 
 function processFile(file) {
     results.innerHTML = '<div class="loading">解析中...</div>';
@@ -720,6 +763,7 @@ async function displayResults(webp, file, arrayBuffer) {
                     <button onclick="pauseAnimation()">&#9646;&#9646; 停止</button>
                     <button onclick="stepFrame(-1)">&#9664; 前</button>
                     <button onclick="stepFrame(1)">&#9654; 次</button>
+                    <button id="alphaToggleBtn" onclick="toggleAlphaOff()">透明度OFF</button>
                 </div>
                 <div id="frameCounter" style="margin-top:10px;color:#666;">フレーム: 0 / ${webp.frames.length}</div>
             </div>
@@ -729,7 +773,10 @@ async function displayResults(webp, file, arrayBuffer) {
         <div class="section">
             <h2>画像プレビュー</h2>
             <div class="preview-section">
-                <img id="staticPreview" alt="WebP Preview">
+                <canvas id="previewCanvas" width="${dims.width}" height="${dims.height}"></canvas>
+                <div class="animation-controls">
+                    <button id="alphaToggleBtn" onclick="toggleAlphaOff()">透明度OFF</button>
+                </div>
             </div>
         </div>`;
     }
@@ -928,10 +975,8 @@ async function displayResults(webp, file, arrayBuffer) {
     if (isAnimated) {
         setupAnimation(url);
     } else {
-        const previewEl = document.getElementById('staticPreview');
-        if (previewEl) {
-            previewEl.src = url;
-        }
+        staticPreviewUrl = url;
+        renderStaticPreview(url);
     }
 }
 
@@ -945,6 +990,7 @@ async function setupAnimation(url) {
 
     img.onload = () => {
         ctx.drawImage(img, 0, 0);
+        if (alphaOff) stripAlpha(canvas);
         updateFrameCounter(1);
     };
 
