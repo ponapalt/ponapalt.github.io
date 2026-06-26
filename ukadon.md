@@ -109,6 +109,12 @@ title: うかどん
 
 - <http://nanachi.sakura.ne.jp/extproj/homete_update/index.php>
 
+### chromeExtension_mastodonTheme
+
+うかどんの色を変えるやつ。
+
+- https://github.com/ambergon/chromeExtension_mastodonTheme
+
 ### うかフィード/湯空さとり
 
 伺か関係のニュースを流してくれます。
